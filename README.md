@@ -1,7 +1,8 @@
 # The Union Demo
 
 A native Go/Ebitengine production built with Democonstructionkit (DCK).
-The Union hall connects eleven screens through animated loading credits.
+The introduction opens with a scrolling background, waving text and YM music,
+then leads to the Union hall and its eleven screens with animated loading credits.
 Graphics, bitmap fonts and music are embedded; playback works offline.
 
 ## Run
@@ -11,11 +12,17 @@ YM Player v1.0.0 and a published DCK version.
 
 ```sh
 go run ./cmd/uniondemo
+go run ./cmd/uniondemo -screen menu
 go run ./cmd/uniondemo -list
 go run ./cmd/uniondemo -screen multiplane
 go run ./cmd/uniondemo -tour -seconds 60
 go run ./cmd/uniondemo -touch
 ```
+
+Startup includes the introduction on desktop and Android. Enter, Space or the
+ENTER/MENU touch button continues immediately; otherwise the menu opens after
+the complete 38.42-second introduction tune. `-screen menu` starts directly in
+the hall. Returning from a screen does not replay the introduction.
 
 The fixed animation rate defaults to 60 Hz independently of display refresh.
 Use `-rate 50` for 50 Hz playback, `-mute` for silent playback, or
@@ -55,7 +62,8 @@ The disk-copy screen is a visual sequence and does not access disks or user file
 
 ## Audio and effects
 
-Ten screen soundtracks and the menu use YM playback through DCK and
+The introduction uses *Think Twice* in YM format. Ten screen soundtracks and
+the menu also use YM playback through DCK and
 YM Player v1.0.0. Beat Dis and Wow use sampled YM tracks. The hidden screen plays
 Mad Max's *Thalion Forever (Feed Me Max)* as losslessly compressed PCM, retaining
 its introduction and continuous musical loop. The loading transition plays its

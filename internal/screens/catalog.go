@@ -1,6 +1,11 @@
 // Package screens contains the individual Union compositions.
 package screens
 
+import "time"
+
+// IntroDuration is one complete performance of the opening YM soundtrack.
+const IntroDuration = 38420 * time.Millisecond
+
 // Descriptor identifies a composition and its default native presentation.
 type Descriptor struct {
 	ID, Title, Directory, Music string
@@ -25,7 +30,15 @@ var catalog = []Descriptor{
 
 func Catalog() []Descriptor { return append([]Descriptor(nil), catalog...) }
 
+// Introduction is separate from the eleven doors in the hall.
+func Introduction() Descriptor {
+	return Descriptor{ID: "intro", Title: "The Union — Introduction", Directory: "intro", Music: "audio/intro.ym", Width: 768, Height: 536}
+}
+
 func Find(id string) (Descriptor, bool) {
+	if id == "intro" {
+		return Introduction(), true
+	}
 	for _, d := range catalog {
 		if d.ID == id {
 			return d, true

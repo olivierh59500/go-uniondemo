@@ -13,7 +13,7 @@ import (
 func main() {
 	var config app.Config
 	var list bool
-	flag.StringVar(&config.Screen, "screen", "menu", "Start at menu or a named screen")
+	flag.StringVar(&config.Screen, "screen", "intro", "Start at intro, menu or a named screen")
 	flag.BoolVar(&config.Muted, "mute", false, "Disable sound output")
 	flag.BoolVar(&config.Touch, "touch", false, "Show the touch controls")
 	flag.BoolVar(&config.Tour, "tour", false, "Visit every screen with returns to the menu")
@@ -23,7 +23,7 @@ func main() {
 	flag.BoolVar(&list, "list", false, "List the available screens")
 	flag.Parse()
 	if list {
-		for _, d := range screens.Catalog() {
+		for _, d := range append([]screens.Descriptor{screens.Introduction()}, screens.Catalog()...) {
 			fmt.Printf("%-14s %s\n", d.ID, d.Title)
 		}
 		return

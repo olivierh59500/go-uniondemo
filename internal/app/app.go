@@ -69,7 +69,7 @@ func New(config Config) (*Game, error) {
 	g := &Game{config: config, hall: hall, pointerX: Width / 2, pointerY: Height / 2}
 	id := config.Screen
 	if id == "" {
-		id = "menu"
+		id = "intro"
 	}
 	if err = g.open(id); err != nil {
 		g.Close()
@@ -102,11 +102,14 @@ func (g *Game) open(id string) error {
 	g.current = id
 	g.pending = ""
 	g.ticks = 0
-	return g.setMusic(music, true, loopStartFrame)
+	return g.setMusic(music, id != "intro", loopStartFrame)
 }
 
 // Begin preserves the hall position and presents the selected screen's credits.
 func (g *Game) Begin(id string) error {
+	if id == "intro" {
+		return g.open(id)
+	}
 	if _, ok := screens.Find(id); !ok {
 		return fmt.Errorf("unknown screen %q", id)
 	}
@@ -224,7 +227,22 @@ func (g *Game) Update() error {
 	if g.closed {
 		return ebiten.Termination
 	}
-	in := g.controls()
+	return g.update(g.controls())
+}
+
+func (g *Game) introComplete() bool {
+	if g.player != nil {
+		// Wait for audible playback, including the device's buffered samples.
+		return g.player.Position() >= screens.IntroDuration
+	}
+	return g.Position() >= screens.IntroDuration
+}
+
+// update processes one fixed-rate input snapshot independently of its source.
+func (g *Game) update(in controls) error {
+	if g.closed {
+		return ebiten.Termination
+	}
 	if in.fullscreen {
 		ebiten.SetFullscreen(!ebiten.IsFullscreen())
 	}
@@ -263,6 +281,12 @@ func (g *Game) Update() error {
 			return g.open(g.pending)
 		}
 		return nil
+	}
+	if g.current == "intro" {
+		if in.enter || in.scene.Action || g.introComplete() {
+			return g.open("menu")
+		}
+		return g.scene.Update(in.scene)
 	}
 	if g.scene == nil {
 		id := g.hall.Update(menu.Input{Left: in.scene.Left, Right: in.scene.Right, Up: in.scene.Up, Down: in.scene.Down, Enter: in.enter})

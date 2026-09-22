@@ -7,7 +7,7 @@ import (
 )
 
 func TestAllScreensLoadThroughCreditsAndReturnToMenu(t *testing.T) {
-	g, err := New(Config{Muted: true})
+	g, err := New(Config{Muted: true, Screen: "menu"})
 	if err != nil {
 		t.Fatal(err)
 	}
