@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.9.11
-	github.com/olivierh59500/democonstructionkit v0.0.0-20260922070326-677e8c81b5d2
+	github.com/olivierh59500/democonstructionkit v0.0.0-20260922080740-1b81c28bcef0
 	github.com/olivierh59500/ym-player v1.0.0
 )
 

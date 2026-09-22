@@ -55,9 +55,11 @@ The disk-copy screen is a visual sequence and does not access disks or user file
 
 ## Audio and effects
 
-All eleven screen soundtracks and the menu use YM playback through DCK and
-YM Player v1.0.0. The loading transition uses its short recorded cue. The hidden
-screen uses the Union track *Think Twice*. Beat Dis and Wow use sampled YM tracks.
+Ten screen soundtracks and the menu use YM playback through DCK and
+YM Player v1.0.0. Beat Dis and Wow use sampled YM tracks. The hidden screen plays
+Mad Max's *Thalion Forever (Feed Me Max)* as losslessly compressed PCM, retaining
+its introduction and continuous musical loop. The loading transition plays its
+short recorded cue once. Audio decoding and playback remain entirely in Go.
 
 Reusable composition, scrolling, raster deformation, sprite and mesh effects
 come from DCK. Each font supplies its own atlas dimensions and ordering. The
