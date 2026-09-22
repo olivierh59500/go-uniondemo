@@ -17,7 +17,20 @@ func (s *Scene) introduction() {
 		return
 	}
 	stage := s.surface(640, 400)
-	text := introTiles(letters, image.Pt(32, 16), image.Pt(70, 136))
+	text, err := composite.NewCellWarp(composite.CellWarpConfig{
+		Cell: image.Pt(32, 16), Filter: ebiten.FilterLinear,
+		Sample: func(row, column int, frame kit.Frame) composite.CellTransform {
+			phase := float64(frame.Tick) * .08
+			pose := composite.CellTransform{}
+			pose.GeoM.Translate(32*math.Sin(phase+float64(row)*.3), 16*math.Sin(phase+float64(column)*.3))
+			return pose
+		},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	s.closers = append(s.closers, text.Close)
 	s.render = func() {
 		clearBlack(s.Canvas)
 		stage.Clear()
@@ -26,34 +39,7 @@ func (s *Scene) introduction() {
 		logoOptions := ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
 		logoOptions.GeoM.Translate(256+190*math.Sin(float64(s.Frame)*.05), 43)
 		composite.Instance{Image: logo, Options: logoOptions}.Draw(stage)
-		text.Update(kit.Frame{Tick: s.Frame})
-		text.Draw(stage)
+		text.DrawAt(stage, letters, kit.Frame{Tick: s.Frame}, 70, 136)
 		s.draw(s.Canvas, stage, 64, 68)
-	}
-}
-
-// introTiles applies independent row and column waves to image fragments. Each
-// fragment keeps its source column when a row shifts, preserving the crossed
-// motion. DCK's sprite sampler works with any image and cell dimensions.
-func introTiles(source *ebiten.Image, cell, origin image.Point) *composite.Sprites {
-	bounds := source.Bounds()
-	columns := (bounds.Dx() + cell.X - 1) / cell.X
-	rows := (bounds.Dy() + cell.Y - 1) / cell.Y
-	tiles := make([]image.Rectangle, columns*rows)
-	for i := range tiles {
-		left, top := i%columns*cell.X, i/columns*cell.Y
-		tiles[i] = image.Rect(left, top, min(left+cell.X, bounds.Dx()), min(top+cell.Y, bounds.Dy())).Add(bounds.Min)
-	}
-	return &composite.Sprites{
-		Count: len(tiles),
-		Sample: func(index int, frame kit.Frame) composite.Instance {
-			column, row := index%columns, index/columns
-			phase := float64(frame.Tick) * .08
-			x := float64(origin.X+column*cell.X) + 32*math.Sin(phase+float64(row)*.3)
-			y := float64(origin.Y+row*cell.Y) + 16*math.Sin(phase+float64(column)*.3)
-			op := ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
-			op.GeoM.Translate(x, y)
-			return composite.Instance{Image: source, Source: &tiles[index], Options: op}
-		},
 	}
 }

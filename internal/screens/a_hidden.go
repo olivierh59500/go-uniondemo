@@ -6,6 +6,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/olivierh59500/democonstructionkit/geometry"
+	"github.com/olivierh59500/democonstructionkit/motion"
 )
 
 func init() { factories["hidden"] = (*Scene).hiddenScreen }
@@ -31,32 +33,31 @@ func (s *Scene) hiddenScreen() {
 	if s.err != nil {
 		return
 	}
-	type point struct{ x, y float64 }
-	var history [61]point
-	position := point{384, 268}
-	for i := range history {
-		history[i] = position
+	position := geometry.Vec2{X: 384, Y: 268}
+	history, err := motion.NewPointHistory(61, position)
+	if err != nil {
+		s.err = err
+		return
 	}
 	palette := aHiddenPalette()
-	whichColor, head := 0, 0
+	whichColor := 0
 	s.input = func(in Input) {
 		if in.PointerDown || in.PointerX != 0 || in.PointerY != 0 {
-			position = point{in.PointerX, in.PointerY}
+			position = geometry.Vec2{X: in.PointerX, Y: in.PointerY}
 		}
 	}
 	s.render = func() {
 		clearBlack(s.Canvas)
-		history[head] = position
+		history.Push(position)
 		vector.FillRect(s.Canvas, 388, 152, 310, 32, palette[whichColor], false)
 		whichColor = (whichColor + 1) % len(palette)
 		s.draw(s.Canvas, main, 64, 68)
 		for i := 3; i >= 0; i-- {
-			p := history[(head-i*20+len(history))%len(history)]
-			s.draw(s.Canvas, pointers[i], p.x, p.y)
+			p, _ := history.At(i * 20)
+			s.draw(s.Canvas, pointers[i], p.X, p.Y)
 		}
-		vector.FillRect(s.Canvas, float32(position.x), float32(position.y), 4, 2, palette[whichColor], false)
-		vector.FillRect(s.Canvas, float32(position.x), float32(position.y), 2, 4, palette[whichColor], false)
-		head = (head + 1) % len(history)
+		vector.FillRect(s.Canvas, float32(position.X), float32(position.Y), 4, 2, palette[whichColor], false)
+		vector.FillRect(s.Canvas, float32(position.X), float32(position.Y), 2, 4, palette[whichColor], false)
 		vector.FillRect(s.Canvas, 0, 0, 768, 68, color.Black, false)
 		vector.FillRect(s.Canvas, 0, 468, 768, 68, color.Black, false)
 		vector.FillRect(s.Canvas, 0, 0, 64, 536, color.Black, false)
