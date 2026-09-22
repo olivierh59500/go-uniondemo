@@ -89,6 +89,30 @@ resolution without opening an audio device, advancing music-driven animation
 with the YM synthesizer. Its frame count is the number of updates after the
 initial screen image. `-pointer-motion` exercises the hidden screen's trails.
 
+## Complete video recording
+
+With FFmpeg installed and a native display available:
+
+```sh
+go run ./cmd/video
+go run ./cmd/video -output recordings/union-preview.mp4 -duration 10s
+```
+
+The default export visits all eleven screens for one minute each, including the
+complete introduction, loading credits, Charly's walk between doors, and four
+seconds in the hall on every return. The route ends after the final return to
+the hall, in about fourteen minutes. It demonstrates all five TNT3 objects,
+several star counts and layer controls, the hidden screen's pointer trails,
+and the animated disk-copy sequence.
+
+The recording contains only the 768 × 536 canvas at 60 frames per second and
+the production's own stereo audio at 48 kHz. Animation and music share the same
+offline clock, independently of export speed. The command creates an MP4,
+a PNG poster from the introduction, and a JSON report with chapter timings in
+the locally excluded `recordings/` directory. `-screen-duration`,
+`-menu-duration` and `-poster-at` adjust the presentation; `-duration` limits a
+preview without changing the complete route.
+
 ## Android
 
 The `mobile` package uses the complete production with touch controls. The
