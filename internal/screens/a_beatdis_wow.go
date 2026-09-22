@@ -1,10 +1,12 @@
 package screens
 
 import (
+	"image"
 	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/olivierh59500/democonstructionkit/composite"
 )
 
 func init() {
@@ -28,6 +30,16 @@ func (s *Scene) beatDis() {
 	if s.err != nil {
 		return
 	}
+	wallpaper, err := composite.NewBackground(composite.BackgroundConfig{Source: image.Rect(0, 0, 640, 800), PeriodY: 800, Filter: ebiten.FilterNearest})
+	if err != nil {
+		s.err = err
+		return
+	}
+	pattern, err := composite.NewBackground(composite.BackgroundConfig{Source: image.Rect(0, 0, 560, 32), PeriodX: 560, Filter: ebiten.FilterNearest})
+	if err != nil {
+		s.err = err
+		return
+	}
 	phase := [8]float64{.2, .4, .6, .8, 1, 1.4, 1.6, 1.8}
 	paperY, scrollX, xPhase := 328.0, 0.0, 0.0
 	s.render = func() {
@@ -35,7 +47,12 @@ func (s *Scene) beatDis() {
 		scroll.Clear()
 		stage.Fill(color.RGBA{R: 160, A: 255})
 		s.draw(s.Canvas, backdrop, 0, 0)
-		s.draw(stage, paper, 0, paperY)
+		if paperY > 0 {
+			// Preserve the wallpaper's initial entrance before its first full repeat.
+			s.draw(stage, paper, 0, paperY)
+		} else {
+			wallpaper.DrawAt(stage, paper, 0, paperY)
+		}
 		paperY -= 3
 		if paperY <= -800 {
 			paperY = 0
@@ -47,7 +64,7 @@ func (s *Scene) beatDis() {
 			phase[i] += .03
 			s.draw(s.Canvas, letter, xOffset+100*math.Sin(phase[i]), 186+84*math.Cos(phase[i]*1.5))
 		}
-		s.draw(scroll, scrollBack, scrollX, 34)
+		pattern.DrawAt(scroll, scrollBack, scrollX, 34)
 		scrollX -= 3
 		if scrollX <= -560 {
 			scrollX = 0

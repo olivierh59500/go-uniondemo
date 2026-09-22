@@ -31,11 +31,16 @@ func (s *Scene) introduction() {
 		return
 	}
 	s.closers = append(s.closers, text.Close)
+	back, err := composite.NewBackground(composite.BackgroundConfig{PeriodX: 640, PeriodY: 96})
+	if err != nil {
+		s.err = err
+		return
+	}
 	s.render = func() {
 		clearBlack(s.Canvas)
 		stage.Clear()
 		// Repetition keeps the background moving without an exposed seam.
-		composite.Repeat(stage, background, composite.Repetition{Zoom: 1, PhaseY: -float64((s.Frame % 24) * 4)})
+		back.DrawAt(stage, background, 0, float64((s.Frame%24)*4))
 		logoOptions := ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
 		logoOptions.GeoM.Translate(256+190*math.Sin(float64(s.Frame)*.05), 43)
 		composite.Instance{Image: logo, Options: logoOptions}.Draw(stage)

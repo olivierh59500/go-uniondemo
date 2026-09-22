@@ -6,6 +6,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/olivierh59500/democonstructionkit/composite"
+	"github.com/olivierh59500/democonstructionkit/modulation"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
 
@@ -30,8 +31,11 @@ func (s *Scene) deltaForce() {
 	logoScale, logoStep, goldY := 1.0, .02, 0.0
 	tile, wordMode, wordWait := 0, 0, 200
 	wordX, wordDX := -640.0, 6.0
-	var oldVoices [3]uint8
-	var ballFrames [3]int
+	var voiceChanges [3]modulation.Change[uint8]
+	var ballEnvelopes [3]*modulation.Decay
+	for i := range ballEnvelopes {
+		ballEnvelopes[i], _ = modulation.NewDecay(modulation.DecayConfig{Peak: 7, Rate: 1})
+	}
 	drawWord := func() {
 		wave.DrawAt(wordMerge, word, 0, 320)
 		wave.Advance()
@@ -58,14 +62,9 @@ func (s *Scene) deltaForce() {
 			logoStep = .02
 		}
 		for i, volume := range s.VoiceVolumes {
-			if oldVoices[i] != volume {
-				ballFrames[i] = 7
-			} else {
-				ballFrames[i] = max(0, ballFrames[i]-1)
-			}
-			oldVoices[i] = volume
+			frame := int(ballEnvelopes[i].Step(voiceChanges[i].Sample(volume), 1))
 			x := [3]float64{244, 355, 464}[i]
-			s.part(s.Canvas, balls, composite.Region{X: float64(ballFrames[i] * 96), Width: 96, Height: 114}, x, 177, 1, 1)
+			s.part(s.Canvas, balls, composite.Region{X: float64(frame * 96), Width: 96, Height: 114}, x, 177, 1, 1)
 		}
 		s.draw(goldStage, gold, 0, 236-goldY)
 		s.draw(goldStage, gold, 0, 354-goldY)

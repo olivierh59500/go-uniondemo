@@ -5,9 +5,12 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/geometry"
+	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 )
 
 func init() {
@@ -26,6 +29,11 @@ func buildTNT2(s *Scene) {
 	front, back := s.image("overlay.png"), s.image("overlay2.png")
 	font := unionBitmap(s.image("fonts.png"), 64, 40)
 	text := "                     THE TNT CREW PRESENTS THE SUPERSCROLLER! THREE INDEPENDENT BACKGROUND LAYERS AND A GIANT SCROLLINE FOR THE UNION DEMO. GREETINGS TO TEX, THE CAREBEARS, THE REPLICANTS, DELTA FORCE AND LEVEL 16. USE THE ARROW KEYS TO CHANGE THE SCROLL SPEED AND DIRECTION. MUSIC BY MAD MAX.                           "
+	backgrounds, err := composite.NewBackground(composite.BackgroundConfig{PeriodX: 640, Filter: ebiten.FilterNearest})
+	if err != nil {
+		s.err = err
+		return
+	}
 	positions := [3]float64{-640, -640, -640}
 	speeds := [3]float64{-2, -4, -6}
 	scrollX, scrollSpeed := -640.0, 4.0
@@ -72,8 +80,7 @@ func buildTNT2(s *Scene) {
 			if positions[i] < -640 {
 				positions[i] = 0
 			}
-			s.draw(stage, layer, positions[i], 0)
-			s.draw(stage, layer, positions[i]+640, 0)
+			backgrounds.DrawAt(stage, layer, positions[i], 0)
 		}
 		// Print only intersecting glyphs; the message never needs a giant texture.
 		first := max(0, int(-scrollX/64))
@@ -89,20 +96,33 @@ func buildTNT2(s *Scene) {
 }
 
 func buildStarballs(s *Scene) {
-	type star struct{ x, y, z float64 }
 	base, mask := s.surface(320, 200), s.surface(320, 200)
 	font, bob1, bob2, logo := s.image("font.png"), s.image("union_bob1.png"), s.image("union_bob2.png"), s.image("union_logo.png")
 	text := " THE TNT CREW PRESENTS STARBALLS, A SCREEN FROM THE UNION DEMO! WATCH THE BALLS CHANGE COLOUR AS THEY CROSS THE LOGO AND THE SCROLLINE. USE UP AND DOWN TO CHANGE THE NUMBER OF STARBALLS. GREETINGS TO ALL MEMBERS OF THE UNION! MUSIC BY MAD MAX.   "
 	scroll := s.ring(mask, font, 15, 8, 32, text, 3)
-	stars := make([]star, 32)
-	randomize := func(p *star) {
-		p.x = math.Floor(s.rnd()*49) - 25
-		p.y = math.Floor(s.rnd()*49) - 25
-		p.z = math.Floor(s.rnd()*30) + 1
+	field, err := sprites.NewField(sprites.FieldConfig{Count: 32, Depth: sprites.DepthRespawn, Near: 0, Far: 32,
+		Spawn: func(_ int, reset bool) sprites.Point {
+			p := sprites.Point{X: math.Floor(s.rnd()*49) - 25, Y: math.Floor(s.rnd()*49) - 25, Z: math.Floor(s.rnd()*30) + 1}
+			if reset {
+				p.Z = 32
+			}
+			return p
+		}})
+	if err != nil {
+		s.err = err
+		return
 	}
-	for i := range stars {
-		randomize(&stars[i])
-	}
+	fieldRenderer := sprites.NewFieldRenderer(128)
+	s.closers = append(s.closers, fieldRenderer.Close)
+	style := sprites.FieldStyle{DrawImages: true, Sample: func(p sprites.FieldSample, a *sprites.FieldAppearance) bool {
+		if p.X < 0 || p.X > 320 || p.Y < 0 || p.Y > 200 {
+			return false
+		}
+		size := (1 - p.Z/32) * 5 / 8
+		a.ScaleX, a.ScaleY = size, size
+		a.Tint.ScaleAlpha(float32(math.Floor((1-p.Z/32)*255) / 255))
+		return true
+	}}
 	counts := []int{32, 40, 48, 64, 72, 80, 88, 96, 112, 128}
 	selected, held := 0, false
 	camera := geometry.Camera{Center: geometry.Vec2{X: 160, Y: 100}, Focal: 64, Near: .001}
@@ -116,10 +136,7 @@ func buildStarballs(s *Scene) {
 			} else {
 				selected = (selected + 1) % len(counts)
 			}
-			stars = make([]star, counts[selected])
-			for i := range stars {
-				randomize(&stars[i])
-			}
+			s.err = field.ResetCount(counts[selected])
 		}
 		held = pressed
 	}
@@ -130,26 +147,12 @@ func buildStarballs(s *Scene) {
 		s.draw(mask, logo, -32, -34)
 		scroll.Step()
 		scroll.DrawAt(mask, 0, 188)
-		for i := range stars {
-			p := &stars[i]
-			p.z -= .2
-			if p.z <= 0 {
-				randomize(p)
-				p.z = 32
-			}
-			projected, _, visible := camera.Project(geometry.Vec3{X: p.x, Y: p.y, Z: p.z})
-			if !visible {
-				continue
-			}
-			x, y := projected.X, projected.Y
-			if x < 0 || x > 320 || y < 0 || y > 200 {
-				continue
-			}
-			size := (1 - p.z/32) * 5 / 8
-			alpha := math.Floor((1-p.z/32)*255) / 255
-			s.transform(base, bob1, x, y, size, size, 0, 0, 0, alpha, ebiten.BlendSourceOver)
-			s.transform(mask, bob2, x, y, size, size, 0, 0, 0, alpha, ebiten.BlendSourceAtop)
-		}
+		field.Step(1, geometry.Vec3{Z: -.2})
+		field.Sample(sprites.FieldView{Camera: camera})
+		style.Image, style.Blend = bob1, ebiten.BlendSourceOver
+		fieldRenderer.Draw(base, field.Samples(), style)
+		style.Image, style.Blend = bob2, ebiten.BlendSourceAtop
+		fieldRenderer.Draw(mask, field.Samples(), style)
 		s.transform(s.Canvas, base, 64, 68, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
 		s.transform(s.Canvas, mask, 64, 68, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
 	}
@@ -161,20 +164,18 @@ func buildLevel16(s *Scene) {
 	grid := unionBitmap(font, 32, 32)
 	// The same recycled glyph positions drive a vertical scroll without rotating its letters.
 	text := "LEVEL 16 PRESENTS THE FULLSCREEN! ANOTHER SCREEN FROM THE GREAT UNION DEMO. GREETINGS TO ALL OUR FRIENDS IN THE UNION: TEX, THE CAREBEARS, TNT CREW, DELTA FORCE AND THE REPLICANTS. ENJOY THE WATER, RASTERS AND THE BOUNCING BALL!   "
-	vertical, err := scrolling.NewRing(scrolling.RingConfig{Text: text, Font: grid, Viewport: 536, Speed: 2})
+	vertical, err := scrolling.New(scrolling.Config{X: 698, Recycled: &scrolling.RecycledConfig{Vertical: true, Ring: scrolling.RingConfig{Text: text, Font: grid, Viewport: 536, Speed: 2}}})
 	if err != nil {
 		s.err = err
 		return
 	}
+	s.closers = append(s.closers, vertical.Close)
 	waterY, rasterY, phase := 0.0, 120.0, 0.0
+	orbit := motion.DefaultNestedOrbit(motion.Point{X: 384, Y: 268}, motion.Point{X: 192, Y: 536 / 2.7})
 	s.render = func() {
 		clearBlack(s.Canvas)
-		vertical.Step()
-		for _, letter := range vertical.Letters() {
-			if region, ok := grid.Region(letter.Rune); ok {
-				s.part(s.Canvas, font, region, 698, letter.X, 1, 1)
-			}
-		}
+		s.err = vertical.Update(kit.Frame{Tick: s.Frame})
+		vertical.Draw(s.Canvas)
 		s.draw(s.Canvas, water, 20, waterY)
 		waterY += 2
 		if waterY >= 220 {
@@ -187,8 +188,8 @@ func buildLevel16(s *Scene) {
 		}
 		s.draw(s.Canvas, back, 0, 0)
 		phase += .008
-		x := 384 + 192*math.Cos(phase*4-math.Cos(phase-.1))
-		y := 268 + 536/2.7*-math.Sin(phase*2.3-math.Cos(phase-.1))
+		position := orbit.At(phase)
+		x, y := position.X, position.Y
 		s.transform(s.Canvas, bob, x, y, 1, 1, 0, float64(bob.Bounds().Dx())/2, float64(bob.Bounds().Dy())/2, 1, ebiten.BlendSourceOver)
 	}
 }
