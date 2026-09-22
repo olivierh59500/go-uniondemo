@@ -5,5 +5,5 @@ import "embed"
 
 // Files contains application-owned media; reusable effects live in DCK.
 //
-//go:embed audio
+//go:embed */*
 var Files embed.FS
