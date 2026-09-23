@@ -39,10 +39,10 @@ func buildMultiplane(s *Scene) {
 	}
 	s.closers = append(s.closers, renderer.Close)
 	batch := composite.NewQuadBatch(64)
-	var positions, speeds [32]float64
-	for i := 0; i < 16; i++ {
-		speeds[i] = 8 - float64(i)*.5
-		speeds[31-i] = speeds[i]
+	bands, err := composite.NewBands(presets.UnionMountainBands())
+	if err != nil {
+		s.err = err
+		return
 	}
 	profile := make([]float64, 40+804+810+160)
 	for i := 40; i < 844; i++ {
@@ -56,18 +56,8 @@ func buildMultiplane(s *Scene) {
 		clearBlack(s.Canvas)
 		background.Clear()
 		stage.Clear()
-		batch.Begin(background, mountains)
-		for i := range positions {
-			positions[i] = math.Mod(positions[i]-speeds[i], 256)
-			y := i * 10
-			if i >= 16 {
-				y += 84
-			}
-			for _, offset := range []float64{0, 640} {
-				batch.Rect(image.Rect(0, i*10, 1024, i*10+10), float32(positions[i]*2+offset), float32(y), 1024, 10)
-			}
-		}
-		batch.Flush()
+		bands.Step()
+		bands.DrawAt(background, mountains, 0, 0)
 		s.draw(s.Canvas, background, 64, 60)
 		counter++
 		if counter > len(profile)-80 {

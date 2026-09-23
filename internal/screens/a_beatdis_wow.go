@@ -26,7 +26,7 @@ func (s *Scene) beatDis() {
 	}
 	stage, scroll := s.surface(640, 297), s.surface(576, 100)
 	const text = "     THE CAREBEARS PRESENT BEAT DIS!   A SCREEN FROM THE UNION DEMO.   THE UNION BRINGS TOGETHER THE CAREBEARS, THE EXCEPTIONS, THE REPLICANTS, THE TNT CREW, DELTA FORCE AND LEVEL 16.   ENJOY THE MUSIC AND THE MOVING LETTERS...                         "
-	ring := s.ring(scroll, font, 96, 100, 32, text, 5)
+	ring := s.ring(scroll, font, "union-beatdis", text, 5)
 	if s.err != nil {
 		return
 	}
@@ -82,7 +82,7 @@ func (s *Scene) wowScroller() {
 	}
 	stage, scroll := s.surface(640, 400), s.surface(320, 200)
 	const text = "   THE CAREBEARS PRESENT THE WOW SCROLLER!   A GIANT SCROLL THROUGH THE COLOURFUL WORLD OF THE UNION DEMO...   GREETINGS TO ALL MEMBERS OF THE UNION AND EVERYONE KEEPING THE ATARI ST ALIVE.                          "
-	ring := s.ring(scroll, font, 192, 190, 32, text, 5)
+	ring := s.ring(scroll, font, "union-wow", text, 5)
 	if s.err != nil {
 		return
 	}

@@ -1,7 +1,6 @@
 package screens
 
 import (
-	"image"
 	"image/color"
 	"math"
 
@@ -11,28 +10,6 @@ import (
 )
 
 func init() { factories["replicants"] = (*Scene).replicants }
-
-// aBitmapText retains a fixed-width text strip without allocating a giant image.
-func (s *Scene) aBitmapText(atlas *ebiten.Image, text string, width, height int, first rune) *scrolling.Scrolling {
-	columns := max(1, atlas.Bounds().Dx()/width)
-	glyphs := make([]*ebiten.Image, len([]rune(text)))
-	for i, ch := range []rune(text) {
-		tile := int(ch - first)
-		if tile < 0 {
-			continue
-		}
-		x, y := tile%columns*width, tile/columns*height
-		region := image.Rect(x, y, x+width, y+height)
-		if region.In(atlas.Bounds()) {
-			glyphs[i] = atlas.SubImage(region).(*ebiten.Image)
-		}
-	}
-	textStrip, err := scrolling.FromImages(glyphs, float64(width))
-	if err != nil {
-		s.err = err
-	}
-	return textStrip
-}
 
 func (s *Scene) replicants() {
 	main, mask, rasters := s.image("overlay.png"), s.image("rastersOverlay.png"), s.image("rasters.png")
@@ -47,7 +24,16 @@ func (s *Scene) replicants() {
 	}
 	stage, rasterStage := s.surface(640, 400), s.surface(640, 200)
 	const text = "                    THE REPLICANTS PRESENT THEIR WOBBLY SPRITE SCREEN!   WELCOME TO THE UNION DEMO.   GREETINGS TO THE CAREBEARS, THE EXCEPTIONS, THE TNT CREW, DELTA FORCE AND LEVEL 16.   ENJOY THE RASTERS, THE MUSIC AND THE DANCING LETTERS!                           "
-	top, bottom := s.aBitmapText(red, text, 64, 64, 32), s.aBitmapText(blue, text, 64, 64, 32)
+	top, err := s.bitmap(red, "union-replicants").Scrolling(text)
+	if err != nil {
+		s.err = err
+		return
+	}
+	bottom, err := s.bitmap(blue, "union-replicants").Scrolling(text)
+	if err != nil {
+		s.err = err
+		return
+	}
 	if s.err != nil {
 		return
 	}

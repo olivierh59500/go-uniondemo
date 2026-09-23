@@ -52,7 +52,7 @@ func unionTNTObjects() []unionSolidObject {
 
 func buildTNT3(s *Scene) {
 	stage, stars := s.surface(640, 400), s.image("stars.png")
-	font := unionBitmap(s.image("fonts.png"), 16, 18)
+	font := s.bitmap(s.image("fonts.png"), "union-tnt3")
 	objects := unionTNTObjects()
 	models := make([][]*effects.MeshEffect, len(objects))
 	angles := objects[1].rotation

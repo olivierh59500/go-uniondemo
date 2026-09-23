@@ -13,7 +13,7 @@ func init() { factories["diskcopier"] = buildDiskCopier }
 func buildDiskCopier(s *Scene) {
 	stage, textLayer := s.surface(640, 480), s.surface(640, 14)
 	panel, led, lcd, raster := s.image("diskcopier.png"), s.image("led_on.png"), s.image("lcd.png"), s.image("rasters.png")
-	font := unionBitmap(s.image("font.png"), 16, 14)
+	font := s.bitmap(s.image("font.png"), "union-diskcopier")
 	var red, green [8]*ebiten.Image
 	var strips [6]*ebiten.Image
 	for i := range red {

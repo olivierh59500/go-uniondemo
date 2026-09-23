@@ -3,15 +3,14 @@ package loader
 
 import (
 	"fmt"
-	"image"
 	"image/color"
 	"io/fs"
-	"math"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/assets"
-	"github.com/olivierh59500/democonstructionkit/composite"
+	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
 
 // Duration follows the embedded transition recording.
@@ -20,7 +19,7 @@ const Duration = 3777120 * time.Microsecond
 type Screen struct {
 	store       *assets.Store
 	font, paper *ebiten.Image
-	lines       []string
+	reveal      *scrolling.Reveal
 	tick        int
 	rate        int
 }
@@ -30,9 +29,20 @@ func New(id string, files fs.FS, rate int) (*Screen, error) {
 	if !ok {
 		return nil, fmt.Errorf("loader: unknown screen %q", id)
 	}
-	s := &Screen{store: assets.New(files), lines: lines, rate: rate}
+	s := &Screen{store: assets.New(files), rate: rate}
 	var err error
 	s.font, err = s.store.Texture("loader/loader.png")
+	if err != nil {
+		s.store.Close()
+		return nil, err
+	}
+	grid, err := presets.BitmapFont("union-loader", s.font, ebiten.FilterNearest)
+	if err != nil {
+		s.store.Close()
+		return nil, err
+	}
+	config := presets.UnionCreditsReveal(grid, lines)
+	s.reveal, err = scrolling.NewReveal(config)
 	if err != nil {
 		s.store.Close()
 		return nil, err
@@ -47,34 +57,9 @@ func (s *Screen) Done() bool {
 func (s *Screen) Draw(dst *ebiten.Image) {
 	dst.Fill(color.Black)
 	s.paper.Clear()
-	// Letters rise column by column, starting at the last row. Frame timing
-	// stays independent of display refresh and keyboard repeat settings.
-	columns := 20
-	if len(s.lines) > 0 {
-		columns = len(s.lines[0])
-	}
-	clock := float64(s.tick) * 140 * 60 / float64(s.rate)
-	index := 0
-	for col := 0; col < columns; col++ {
-		for row := 0; row < len(s.lines); row++ {
-			line := s.lines[len(s.lines)-1-row]
-			var ch byte = ' '
-			if col < len(line) {
-				ch = line[col]
-			}
-			progress := math.Max(0, math.Min(1, (clock-float64(index*30))/50))
-			y := 500 + (float64(374-row*16)-500)*progress
-			if ch >= 32 {
-				glyph := int(ch) - 32
-				atlasColumns := s.font.Bounds().Dx() / 16
-				r := image.Rect((glyph%atlasColumns)*16, (glyph/atlasColumns)*16, (glyph%atlasColumns+1)*16, (glyph/atlasColumns+1)*16)
-				op := ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(154+col*16), y-8)
-				composite.Instance{Image: s.font, Source: &r, Options: op}.Draw(s.paper)
-			}
-			index++
-		}
-	}
+	// The shared reveal uses a fixed clock independent from display refresh.
+	s.reveal.DrawAt(s.paper, float64(s.tick)*140*60/float64(s.rate))
+
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Translate(64, 60)
 	dst.DrawImage(s.paper, &op)

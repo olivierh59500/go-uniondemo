@@ -15,7 +15,7 @@ func TestEveryScreenHasCreditsAndTimedTransition(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(s.lines) != 23 {
+			if len(credits[d.ID]) != 23 {
 				t.Fatalf("%s: incomplete credits", d.ID)
 			}
 			ticks := 0

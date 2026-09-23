@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/olivierh59500/democonstructionkit/assets"
 	"github.com/olivierh59500/democonstructionkit/composite"
-	"github.com/olivierh59500/democonstructionkit/font"
+	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/render"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
@@ -75,26 +75,12 @@ func New(files fs.FS) (_ *Game, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("menu: %w", err)
 	}
-	columns, rows := atlas.Bounds().Dx()/64, atlas.Bounds().Dy()/34
-	if columns == 0 || rows == 0 {
-		return nil, fmt.Errorf("menu: font atlas needs 64x34 cells")
-	}
-	order := make([]rune, columns*rows)
-	for i := range order {
-		order[i] = rune(32 + i)
-	}
-	metrics, err := font.NewGrid(font.Grid{
-		Bounds: atlas.Bounds(), Cell: image.Pt(64, 34), Columns: columns,
-		Order: string(order), Uppercase: true,
-	})
+	grid, err := presets.BitmapFont("union-menu", atlas, ebiten.FilterNearest)
 	if err != nil {
 		return nil, fmt.Errorf("menu: font: %w", err)
 	}
-	g.text, err = scrolling.New(scrolling.Config{
-		Text: welcomeText, Fonts: map[string]scrolling.Face{
-			"default": {Atlas: atlas, Metrics: metrics},
-		},
-	})
+	g.text, err = grid.Scrolling(welcomeText)
+
 	if err != nil {
 		return nil, fmt.Errorf("menu: scrolling: %w", err)
 	}

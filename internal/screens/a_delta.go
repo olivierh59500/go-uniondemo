@@ -7,7 +7,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/modulation"
-	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
 
 func init() { factories["delta"] = (*Scene).deltaForce }
@@ -19,10 +18,10 @@ func (s *Scene) deltaForce() {
 	}
 	logoStage, merge, goldStage := s.surface(640, 130), s.surface(640, 480), s.surface(640, 472)
 	scroll, word, wordMerge := s.surface(640, 150), s.surface(640, 150), s.surface(640, 480)
-	grid := scrolling.BitmapGrid{Image: font, Width: 64, Height: 34, Columns: max(1, font.Bounds().Dx()/64), ColumnSpan: float64(font.Bounds().Dx()) / 64, First: 32, Filter: ebiten.FilterNearest}
+	grid := s.bitmap(font, "union-delta")
 	grid.Print(word, "MEGA DEMO", 0, 0, 1, 1)
 	const text = "DELTA FORCE PRESENTS THE ^P3SPHER-I-COOL SCREEN FROM THE UNION DEMO ^P3!!   THREE BOUNCING BALLS FOLLOW THE MUSIC WHILE THE GOLDEN SCROLL WAVES ACROSS THE SCREEN.   GREETINGS TO EVERY MEMBER OF THE UNION...                         "
-	ring := s.ring(scroll, font, 64, 34, 32, text, 6)
+	ring := s.ring(scroll, font, "union-delta", text, 6)
 	if s.err != nil {
 		return
 	}

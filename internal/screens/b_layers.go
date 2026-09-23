@@ -19,16 +19,17 @@ func init() {
 	factories["level16"] = buildLevel16
 }
 
-func unionBitmap(atlas *ebiten.Image, w, h float64) scrolling.BitmapGrid {
-	return scrolling.BitmapGrid{Image: atlas, Width: w, Height: h, Columns: max(1, int(float64(atlas.Bounds().Dx())/w)), ColumnSpan: float64(atlas.Bounds().Dx()) / w, First: 32, Filter: ebiten.FilterNearest}
-}
-
 func buildTNT2(s *Scene) {
 	stage := s.surface(640, 400)
 	layers := []*ebiten.Image{s.image("blueLayer.png"), s.image("brownLayer.png"), s.image("greenLayer.png")}
 	front, back := s.image("overlay.png"), s.image("overlay2.png")
-	font := unionBitmap(s.image("fonts.png"), 64, 40)
+	font := s.bitmap(s.image("fonts.png"), "union-tnt2")
 	text := "                     THE TNT CREW PRESENTS THE SUPERSCROLLER! THREE INDEPENDENT BACKGROUND LAYERS AND A GIANT SCROLLINE FOR THE UNION DEMO. GREETINGS TO TEX, THE CAREBEARS, THE REPLICANTS, DELTA FORCE AND LEVEL 16. USE THE ARROW KEYS TO CHANGE THE SCROLL SPEED AND DIRECTION. MUSIC BY MAD MAX.                           "
+	textView, err := scrolling.NewBitmapText(font, text, 0)
+	if err != nil {
+		s.err = err
+		return
+	}
 	backgrounds, err := composite.NewBackground(composite.BackgroundConfig{PeriodX: 640, Filter: ebiten.FilterNearest})
 	if err != nil {
 		s.err = err
@@ -82,12 +83,12 @@ func buildTNT2(s *Scene) {
 			}
 			backgrounds.DrawAt(stage, layer, positions[i], 0)
 		}
-		// Print only intersecting glyphs; the message never needs a giant texture.
-		first := max(0, int(-scrollX/64))
-		last := min(len(text), first+12)
-		font.Print(stage, text[first:last], scrollX+float64(first)*64, 180, 1, 1)
+		if err := textView.DrawWindow(stage, scrollX, 180, 640); err != nil {
+			s.err = err
+			return
+		}
 		scrollX -= scrollSpeed
-		if scrollX < -float64(len(text)*64-640) {
+		if scrollX < -(textView.Width() - 640) {
 			scrollX = -640
 		}
 		s.draw(stage, front, 0, 0)
@@ -99,7 +100,7 @@ func buildStarballs(s *Scene) {
 	base, mask := s.surface(320, 200), s.surface(320, 200)
 	font, bob1, bob2, logo := s.image("font.png"), s.image("union_bob1.png"), s.image("union_bob2.png"), s.image("union_logo.png")
 	text := " THE TNT CREW PRESENTS STARBALLS, A SCREEN FROM THE UNION DEMO! WATCH THE BALLS CHANGE COLOUR AS THEY CROSS THE LOGO AND THE SCROLLINE. USE UP AND DOWN TO CHANGE THE NUMBER OF STARBALLS. GREETINGS TO ALL MEMBERS OF THE UNION! MUSIC BY MAD MAX.   "
-	scroll := s.ring(mask, font, 15, 8, 32, text, 3)
+	scroll := s.ring(mask, font, "union-starballs", text, 3)
 	field, err := sprites.NewField(sprites.FieldConfig{Count: 32, Depth: sprites.DepthRespawn, Near: 0, Far: 32,
 		Spawn: func(_ int, reset bool) sprites.Point {
 			p := sprites.Point{X: math.Floor(s.rnd()*49) - 25, Y: math.Floor(s.rnd()*49) - 25, Z: math.Floor(s.rnd()*30) + 1}
@@ -161,7 +162,7 @@ func buildStarballs(s *Scene) {
 func buildLevel16(s *Scene) {
 	back, bob := s.image("l16bck.png"), s.image("l16bob.png")
 	font, water, raster := s.image("l16font.png"), s.image("l16water.png"), s.image("l16raster.png")
-	grid := unionBitmap(font, 32, 32)
+	grid := s.bitmap(font, "union-level16")
 	// The same recycled glyph positions drive a vertical scroll without rotating its letters.
 	text := "LEVEL 16 PRESENTS THE FULLSCREEN! ANOTHER SCREEN FROM THE GREAT UNION DEMO. GREETINGS TO ALL OUR FRIENDS IN THE UNION: TEX, THE CAREBEARS, TNT CREW, DELTA FORCE AND THE REPLICANTS. ENJOY THE WATER, RASTERS AND THE BOUNCING BALL!   "
 	vertical, err := scrolling.New(scrolling.Config{X: 698, Recycled: &scrolling.RecycledConfig{Vertical: true, Ring: scrolling.RingConfig{Text: text, Font: grid, Viewport: 536, Speed: 2}}})
