@@ -101,20 +101,23 @@ func buildStarballs(s *Scene) {
 	font, bob1, bob2, logo := s.image("font.png"), s.image("union_bob1.png"), s.image("union_bob2.png"), s.image("union_logo.png")
 	text := " THE TNT CREW PRESENTS STARBALLS, A SCREEN FROM THE UNION DEMO! WATCH THE BALLS CHANGE COLOUR AS THEY CROSS THE LOGO AND THE SCROLLINE. USE UP AND DOWN TO CHANGE THE NUMBER OF STARBALLS. GREETINGS TO ALL MEMBERS OF THE UNION! MUSIC BY MAD MAX.   "
 	scroll := s.ring(mask, font, "union-starballs", text, 3)
-	field, err := sprites.NewField(sprites.FieldConfig{Count: 32, Depth: sprites.DepthRespawn, Near: 0, Far: 32,
-		Spawn: func(_ int, reset bool) sprites.Point {
-			p := sprites.Point{X: math.Floor(s.rnd()*49) - 25, Y: math.Floor(s.rnd()*49) - 25, Z: math.Floor(s.rnd()*30) + 1}
-			if reset {
-				p.Z = 32
-			}
-			return p
-		}})
+	field, err := sprites.NewProjectedField(sprites.ProjectedFieldConfig{
+		Field: sprites.FieldConfig{Count: 32, Depth: sprites.DepthRespawn, Near: 0, Far: 32,
+			Spawn: func(_ int, reset bool) sprites.Point {
+				p := sprites.Point{X: math.Floor(s.rnd()*49) - 25, Y: math.Floor(s.rnd()*49) - 25, Z: math.Floor(s.rnd()*30) + 1}
+				if reset {
+					p.Z = 32
+				}
+				return p
+			}},
+		View:     sprites.FieldView{Camera: geometry.Camera{Center: geometry.Vec2{X: 160, Y: 100}, Focal: 64, Near: .001}},
+		Velocity: geometry.Vec3{Z: -.2}, Delta: 1, RendererCapacity: 128,
+	})
 	if err != nil {
 		s.err = err
 		return
 	}
-	fieldRenderer := sprites.NewFieldRenderer(128)
-	s.closers = append(s.closers, fieldRenderer.Close)
+	s.closers = append(s.closers, field.Close)
 	style := sprites.FieldStyle{DrawImages: true, Sample: func(p sprites.FieldSample, a *sprites.FieldAppearance) bool {
 		if p.X < 0 || p.X > 320 || p.Y < 0 || p.Y > 200 {
 			return false
@@ -126,7 +129,6 @@ func buildStarballs(s *Scene) {
 	}}
 	counts := []int{32, 40, 48, 64, 72, 80, 88, 96, 112, 128}
 	selected, held := 0, false
-	camera := geometry.Camera{Center: geometry.Vec2{X: 160, Y: 100}, Focal: 64, Near: .001}
 	s.input = func(in Input) {
 		pressed := in.Up || in.Down || in.Action
 		if in.Number >= 1 && in.Number <= 10 || pressed && !held {
@@ -148,12 +150,14 @@ func buildStarballs(s *Scene) {
 		s.draw(mask, logo, -32, -34)
 		scroll.Step()
 		scroll.DrawAt(mask, 0, 188)
-		field.Step(1, geometry.Vec3{Z: -.2})
-		field.Sample(sprites.FieldView{Camera: camera})
+		if err := field.Update(kit.Frame{}); err != nil {
+			s.err = err
+			return
+		}
 		style.Image, style.Blend = bob1, ebiten.BlendSourceOver
-		fieldRenderer.Draw(base, field.Samples(), style)
+		field.DrawStyle(base, style)
 		style.Image, style.Blend = bob2, ebiten.BlendSourceAtop
-		fieldRenderer.Draw(mask, field.Samples(), style)
+		field.DrawStyle(mask, style)
 		s.transform(s.Canvas, base, 64, 68, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
 		s.transform(s.Canvas, mask, 64, 68, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
 	}
