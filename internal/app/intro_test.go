@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/olivierh59500/democonstructionkit/sound"
 	"github.com/olivierh59500/go-uniondemo/assets"
 	"github.com/olivierh59500/go-uniondemo/internal/screens"
-	"github.com/olivierh59500/ym-player/pkg/stsound"
 )
 
 func TestIntroductionIsDefaultAndMenuCanBeRequested(t *testing.T) {
@@ -38,12 +38,12 @@ func TestIntroductionContinuesAtMusicEndAtEitherRate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := stsound.Create()
-	defer p.Destroy()
-	if err = p.LoadMemory(data); err != nil {
+	p, err := sound.Open("intro.ym", data, sound.Options{})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if time.Duration(p.GetInfo().MusicTimeInMs)*time.Millisecond != screens.IntroDuration {
+	defer p.Close()
+	if p.Metadata().Duration != screens.IntroDuration {
 		t.Fatal("introduction duration does not match its soundtrack")
 	}
 	for _, rate := range []int{50, 60} {

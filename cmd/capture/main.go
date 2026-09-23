@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -15,11 +16,11 @@ import (
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/olivierh59500/democonstructionkit/sound"
 	"github.com/olivierh59500/go-uniondemo/assets"
 	"github.com/olivierh59500/go-uniondemo/internal/loader"
 	"github.com/olivierh59500/go-uniondemo/internal/menu"
 	"github.com/olivierh59500/go-uniondemo/internal/screens"
-	"github.com/olivierh59500/ym-player/pkg/stsound"
 )
 
 type options struct {
@@ -92,30 +93,31 @@ func newCapture(o options) (*captureGame, error) {
 		}
 		g.width, g.height = scene.Descriptor.Width, scene.Descriptor.Height
 		g.draw, g.close = scene.Draw, scene.Close
-		var music *stsound.StSound
-		var samples []int16
+		var music *sound.Stream
+		var samples []byte
 		if o.screen == "delta" {
 			data, readErr := assets.Files.ReadFile(scene.Music)
 			if readErr != nil {
 				scene.Close()
 				return nil, readErr
 			}
-			music = stsound.CreateWithRate(48000)
-			if err := music.LoadMemory(data); err != nil {
-				music.Destroy()
+			music, err = sound.Open(scene.Music, data, sound.Options{SampleRate: 48000, Loop: true, BlockFrames: 48000 / o.rate})
+			if err != nil {
 				scene.Close()
 				return nil, err
 			}
-			music.SetLoopMode(true)
-			music.Play()
-			samples = make([]int16, 48000/o.rate)
-			g.close = func() error { music.Destroy(); return scene.Close() }
+			samples = make([]byte, 48000/o.rate*8)
+			g.close = func() error { return errors.Join(music.Close(), scene.Close()) }
 		}
 		g.step = func(frame int) error {
 			if music != nil {
-				music.Compute(samples, len(samples))
-				for voice := range scene.VoiceVolumes {
-					scene.VoiceVolumes[voice] = uint8(music.GetRegister(8 + voice))
+				if _, err := io.ReadFull(music, samples); err != nil {
+					return err
+				}
+				if registers, ok := music.YMRegisters(); ok {
+					for voice := range scene.VoiceVolumes {
+						scene.VoiceVolumes[voice] = registers[8+voice]
+					}
 				}
 			}
 			input := screens.Input{PointerX: float64(g.width) / 2, PointerY: float64(g.height) / 2}

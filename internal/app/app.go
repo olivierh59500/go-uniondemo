@@ -2,16 +2,11 @@
 package app
 
 import (
-	"bytes"
-	"compress/gzip"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
-	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 	"github.com/olivierh59500/democonstructionkit/sound"
 	device "github.com/olivierh59500/democonstructionkit/sound/ebiten"
 	"github.com/olivierh59500/democonstructionkit/sound/output"
@@ -150,35 +145,7 @@ func (g *Game) setMusic(name string, loop bool, loopStartFrame int64) error {
 	if err != nil {
 		return err
 	}
-	if strings.HasSuffix(name, ".gz") {
-		compressed, zipErr := gzip.NewReader(bytes.NewReader(data))
-		if zipErr != nil {
-			return zipErr
-		}
-		data, err = io.ReadAll(compressed)
-		closeErr := compressed.Close()
-		if err != nil {
-			return err
-		}
-		if closeErr != nil {
-			return closeErr
-		}
-		name = strings.TrimSuffix(name, ".gz")
-	}
-	var decoded io.ReadSeeker
-	switch {
-	case strings.HasSuffix(name, ".ogg"):
-		decoded, err = vorbis.DecodeWithSampleRate(48000, bytes.NewReader(data))
-	case strings.HasSuffix(name, ".wav"):
-		decoded, err = wav.DecodeWithSampleRate(48000, bytes.NewReader(data))
-	default:
-		g.stream, err = sound.NewYM(data, sound.YMOptions{SampleRate: 48000, Loop: loop})
-		return err
-	}
-	if err != nil {
-		return err
-	}
-	g.stream, err = sound.NewPCM16(decoded, sound.PCM16Options{SampleRate: 48000, Loop: loop, LoopStartFrame: loopStartFrame})
+	g.stream, err = sound.Open(name, data, sound.Options{SampleRate: 48000, Loop: loop, LoopStartFrame: loopStartFrame})
 	return err
 }
 
