@@ -76,6 +76,10 @@ Reusable composition, scrolling, raster deformation, sprite and mesh effects
 come from DCK. Each font supplies its own atlas dimensions and ordering. The
 Delta Force balls read synchronized YM voice registers from the active stream.
 Scene clocks advance only in Update; rendering does not advance animation.
+Wow and Replicants use `composite.RasterOverlay` for their masked raster
+material. Their opposite phase directions and inclusive wrap boundaries stay
+editable in DCK. Seven Wow captures and six Replicants captures match the
+previous source pixels, including the two wrap handoffs.
 
 ## Validation and frame captures
 

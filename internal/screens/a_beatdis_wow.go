@@ -86,7 +86,16 @@ func (s *Scene) wowScroller() {
 	if s.err != nil {
 		return
 	}
-	backY, frontY, rasterY := 0.0, 0.0, 0.0
+	rasterFill, err := composite.NewRasterOverlay(composite.RasterOverlayConfig{
+		Image: raster, ScaleX: 640, ScaleY: 1, Alpha: 1,
+		VelocityY: -2, WrapY: &composite.RasterWrap{Boundary: -108, Restart: -24, Inclusive: true},
+		Filter: ebiten.FilterNearest, Blend: ebiten.BlendSourceAtop,
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	backY, frontY := 0.0, 0.0
 	s.render = func() {
 		clearBlack(s.Canvas)
 		stage.Clear()
@@ -98,11 +107,8 @@ func (s *Scene) wowScroller() {
 		}
 		ring.Step()
 		ring.DrawAt(scroll, 0, 10)
-		s.transform(scroll, raster, 0, rasterY, 640, 1, 0, 0, 0, 1, ebiten.BlendSourceAtop)
-		rasterY -= 2
-		if rasterY <= -108 {
-			rasterY = -24
-		}
+		rasterFill.Draw(scroll)
+		rasterFill.Step()
 		s.transform(stage, scroll, 0, 0, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
 		s.draw(stage, front, 0, frontY)
 		frontY -= 2

@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
 
@@ -23,6 +24,15 @@ func (s *Scene) replicants() {
 		return
 	}
 	stage, rasterStage := s.surface(640, 400), s.surface(640, 200)
+	rasterFill, err := composite.NewRasterOverlay(composite.RasterOverlayConfig{
+		Image: rasters, Y: -53, ScaleX: 1, ScaleY: 1, Alpha: 1,
+		VelocityY: 1, WrapY: &composite.RasterWrap{Boundary: -53, Restart: -221, Inclusive: true},
+		Filter: ebiten.FilterNearest, Blend: ebiten.BlendSourceAtop,
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
 	const text = "                    THE REPLICANTS PRESENT THEIR WOBBLY SPRITE SCREEN!   WELCOME TO THE UNION DEMO.   GREETINGS TO THE CAREBEARS, THE EXCEPTIONS, THE TNT CREW, DELTA FORCE AND LEVEL 16.   ENJOY THE RASTERS, THE MUSIC AND THE DANCING LETTERS!                           "
 	top, err := s.bitmap(red, "union-replicants").Scrolling(text)
 	if err != nil {
@@ -44,7 +54,7 @@ func (s *Scene) replicants() {
 	for i := range phase {
 		phase[i] = float64(i) * .5
 	}
-	scrollX, scrollSpeed, rasterY := -640.0, 6.0, -53.0
+	scrollX, scrollSpeed := -640.0, 6.0
 	previous := Input{}
 	s.input = func(in Input) {
 		if in.Right && !previous.Right {
@@ -91,12 +101,9 @@ func (s *Scene) replicants() {
 			s.transform(s.Canvas, raster, 0, 60+bottomY[i], 390, 1, 0, 0, 0, 1, ebiten.BlendSourceOver)
 		}
 		s.draw(s.Canvas, stage, 64, 60)
-		rasterY++
-		if rasterY >= -53 {
-			rasterY = -221
-		}
+		rasterFill.Step()
 		s.draw(rasterStage, mask, 0, 0)
-		s.transform(rasterStage, rasters, 0, rasterY, 1, 1, 0, 0, 0, 1, ebiten.BlendSourceAtop)
+		rasterFill.Draw(rasterStage)
 		s.draw(s.Canvas, rasterStage, 64, 206)
 		for i, sprite := range sprites {
 			phase[i] += .08
