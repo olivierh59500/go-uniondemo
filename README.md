@@ -117,6 +117,9 @@ for pixel.
 The input-driven hall and banner also use `motion.WalkParallax` with separate
 speeds and directional wrap limits. Eleven walking captures, including the
 large hall wrap, match the prior menu pixel for pixel.
+Multi-Plane's large logo now compiles the shared TCB row-wave sections with
+its own source-index phases. Eight captures at both section joins and the
+profile wrap remain pixel-identical.
 
 ## Validation and frame captures
 

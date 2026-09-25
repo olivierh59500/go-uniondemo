@@ -2,10 +2,10 @@ package screens
 
 import (
 	"image"
-	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/composite"
+	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
@@ -44,12 +44,13 @@ func buildMultiplane(s *Scene) {
 		s.err = err
 		return
 	}
-	profile := make([]float64, 40+804+810+160)
-	for i := 40; i < 844; i++ {
-		profile[i] = 8 * math.Sin(float64(i)*.05-2)
-	}
-	for i := 844; i < 1654; i++ {
-		profile[i] = 8 * math.Sin(float64(i)*.15)
+	sections := presets.TCBLogoWaveSections()
+	sections[1].SampleStart = 40
+	sections[2].SampleStart = 844
+	profile, err := motion.CompileWaveTable(sections...)
+	if err != nil {
+		s.err = err
+		return
 	}
 	counter, next, rotation := 0, 0, 0.0
 	s.render = func() {
