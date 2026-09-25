@@ -89,6 +89,10 @@ Those three operation clocks now use `motion.GatedWrapBank` with independent
 start cues and a strict tile-82 wrap. Eight captures across the first wrap and
 late copy operations match the previous renderer pixel for pixel.
 Scene clocks advance only in Update; rendering does not advance animation.
+The introduction's 32×16 waving text cells now use DCK's
+`composite.HarmonicCellWarp`. It samples 14 row waves and 16 column waves once
+per frame instead of evaluating two sine expressions for each of 224 cells.
+Eight frames across the intro remain pixel-identical to the previous renderer.
 Wow and Replicants use `composite.RasterOverlay` for their masked raster
 material. Their opposite phase directions and inclusive wrap boundaries stay
 editable in DCK. Replicants arranges its letter sprites in a resting row and

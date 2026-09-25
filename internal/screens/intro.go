@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
+	"github.com/olivierh59500/democonstructionkit/motion"
 )
 
 func init() { factories["intro"] = (*Scene).introduction }
@@ -17,13 +18,11 @@ func (s *Scene) introduction() {
 		return
 	}
 	stage := s.surface(640, 400)
-	text, err := composite.NewCellWarp(composite.CellWarpConfig{
+	text, err := composite.NewHarmonicCellWarp(composite.HarmonicCellWarpConfig{
 		Cell: image.Pt(32, 16), Filter: ebiten.FilterLinear,
-		Sample: func(row, column int, frame kit.Frame) composite.CellTransform {
-			phase := float64(frame.Tick) * .08
-			pose := composite.CellTransform{}
-			pose.GeoM.Translate(32*math.Sin(phase+float64(row)*.3), 16*math.Sin(phase+float64(column)*.3))
-			return pose
+		Waves: composite.CellWaveBank{
+			XRows:    motion.Waves{{Amplitude: 32, Spatial: .3, Speed: .08}},
+			YColumns: motion.Waves{{Amplitude: 16, Spatial: .3, Speed: .08}},
 		},
 	})
 	if err != nil {
