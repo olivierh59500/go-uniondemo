@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/olivierh59500/democonstructionkit/motion"
 )
 
 func init() { factories["diskcopier"] = buildDiskCopier }
@@ -29,7 +30,15 @@ func buildDiskCopier(s *Scene) {
 	var copying, held bool
 	var introTick, copyTick, textIndex int
 	var tiles [3]float64
-	x, copyX, rasterY := -640.0, 0.0, 174.0
+	rasterMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
+		Start: []float64{174}, Velocity: []float64{-1.5},
+		Lower: &motion.WrapLimit{Boundary: -974, Restart: 174, Inclusive: true},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	x, copyX := -640.0, 0.0
 	reset := func() { introTick, copyTick = 0, 0; tiles = [3]float64{}; x, copyX = -640, 0 }
 	s.input = func(in Input) {
 		if in.Action && !held {
@@ -49,13 +58,10 @@ func buildDiskCopier(s *Scene) {
 		textLayer.Clear()
 		for i, strip := range strips {
 			strip.Clear()
-			s.transform(strip, raster, 0, rasterY-float64(i*5), 1.3, 1, 0, 0, 0, 1, ebiten.BlendSourceOver)
+			s.transform(strip, raster, 0, rasterMotion.At(0)-float64(i*5), 1.3, 1, 0, 0, 0, 1, ebiten.BlendSourceOver)
 			s.draw(s.Canvas, strip, 0, float64(132+i*34))
 		}
-		rasterY -= 1.5
-		if rasterY <= -974 {
-			rasterY = 174
-		}
+		rasterMotion.Step()
 		s.transform(stage, panel, 320, 200, 1, 1, 0, float64(panel.Bounds().Dx())/2, float64(panel.Bounds().Dy())/2, 1, ebiten.BlendSourceOver)
 		if !copying {
 			time := float64(introTick) * .5
