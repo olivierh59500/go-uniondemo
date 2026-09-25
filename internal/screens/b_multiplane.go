@@ -5,7 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
-	"github.com/olivierh59500/democonstructionkit/composite"
+	"github.com/olivierh59500/democonstructionkit/effects"
 	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
@@ -16,19 +16,9 @@ func init() { factories["multiplane"] = buildMultiplane }
 
 func buildMultiplane(s *Scene) {
 	rasters, mountains, logo, font := s.image("rast.png"), s.image("mountains.png"), s.image("logo.png"), s.image("bgfont.png")
-	background, stage := s.surface(640, 400), s.surface(320, 200)
 	center, centerFlipped := s.surface(80, 16), s.surface(80, 16)
 	s.part(center, logo, unionRegion(114, 0, 79, 15), 0, 0, 1, 1)
 	s.part(centerFlipped, logo, unionRegion(114, 0, 79, 15), 0, 16, 1, -1)
-	face, err := sprites.NewAxisFlip(sprites.AxisFlipConfig{
-		Front: center, Back: centerFlipped,
-		Saw:    &motion.SawToggleConfig{Start: 0, Velocity: .08, Boundary: 1, Restart: -1},
-		Filter: ebiten.FilterNearest, Blend: ebiten.BlendSourceOver,
-	})
-	if err != nil {
-		s.err = err
-		return
-	}
 	spec, _ := presets.FindFont("tcb-multi-plane-3d-scroller")
 	metrics, err := spec.Build(font.Bounds())
 	if err != nil {
@@ -37,17 +27,6 @@ func buildMultiplane(s *Scene) {
 	}
 	scrollConfig := presets.TCBProjectedScroll(unionMultiplaneText, 32, scrolling.Face{Atlas: font, Metrics: metrics}, rasters)
 	scrollConfig.Projected.Planes.Projection = unionMultiplaneProjection()
-	scroll, err := scrolling.New(scrollConfig)
-	if err != nil {
-		s.err = err
-		return
-	}
-	s.closers = append(s.closers, scroll.Close)
-	bands, err := composite.NewBands(presets.UnionMountainBands())
-	if err != nil {
-		s.err = err
-		return
-	}
 	sections := presets.TCBLogoWaveSections()
 	sections[1].SampleStart = 40
 	sections[2].SampleStart = 844
@@ -56,29 +35,29 @@ func buildMultiplane(s *Scene) {
 		s.err = err
 		return
 	}
-	logoRows, err := composite.NewProfileImage(logo.SubImage(image.Rect(0, 16, 303, 48)).(*ebiten.Image), presets.TCBLogoRowProfile(profile, 303))
+	part, err := effects.NewMultiPlaneScene(effects.MultiPlaneSceneConfig{
+		Mountains: mountains, Logo: logo, LogoSource: image.Rect(0, 16, 303, 48),
+		Bands: presets.UnionMountainBands(), Rows: presets.TCBLogoRowProfile(profile, 303),
+		Center: sprites.AxisFlipConfig{
+			Front: center, Back: centerFlipped,
+			Saw:    &motion.SawToggleConfig{Start: 0, Velocity: .08, Boundary: 1, Restart: -1},
+			Filter: ebiten.FilterNearest, Blend: ebiten.BlendSourceOver,
+		},
+		Scroll: scrollConfig, Viewport: image.Rect(64, 60, 704, 460), StageSize: image.Pt(320, 200),
+		CenterX: 160, CenterY: 88, NativeStage: true, Filter: ebiten.FilterNearest,
+	})
 	if err != nil {
 		s.err = err
 		return
 	}
-	s.closers = append(s.closers, logoRows.Close)
+	s.closers = append(s.closers, part.Close)
 	s.render = func() {
 		clearBlack(s.Canvas)
-		background.Clear()
-		stage.Clear()
-		bands.Step()
-		bands.DrawAt(background, mountains, 0, 0)
-		s.draw(s.Canvas, background, 64, 60)
-		logoRows.Advance()
-		logoRows.Draw(stage)
-		face.Step()
-		face.DrawAt(stage, 160, 88)
-		if err := scroll.Update(kit.Frame{}); err != nil {
+		if err := part.Update(kit.Frame{Tick: s.Frame}); err != nil {
 			s.err = err
 			return
 		}
-		scroll.Draw(stage)
-		s.transform(s.Canvas, stage, 64, 60, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
+		part.Draw(s.Canvas)
 	}
 }
 
