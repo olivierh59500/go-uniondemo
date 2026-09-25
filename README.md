@@ -89,6 +89,9 @@ Beat Dis, Wow, TNT2 and Level 16 now share `motion.WrapBank` for their
 independent scrolling layers. Thirty-five checkpoints, including TNT2 control
 changes and strict/inclusive wrap boundaries, match the previous screens pixel
 for pixel.
+Beat Dis also uses `motion.HarmonicFormation` and `sprites.Group` for its eight
+letters. A phase table preserves their nonuniform spacing while separate clocks
+control the common horizontal wobble and the individual orbits.
 
 ## Validation and frame captures
 

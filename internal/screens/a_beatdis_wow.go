@@ -3,11 +3,13 @@ package screens
 import (
 	"image"
 	"image/color"
-	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 )
 
 func init() {
@@ -41,7 +43,19 @@ func (s *Scene) beatDis() {
 		s.err = err
 		return
 	}
-	phase := [8]float64{.2, .4, .6, .8, 1, 1.4, 1.6, 1.8}
+	formation, err := motion.NewHarmonicFormation(presets.BeatDisLetterFormationConfig())
+	if err != nil {
+		s.err = err
+		return
+	}
+	letterGroup, err := sprites.NewGroup(sprites.GroupConfig{
+		Frames: letters[:], Count: len(letters), FrameStride: 1, Harmonic: formation,
+		HarmonicClockStart: [2]float64{0, .03}, HarmonicClockStep: [2]float64{.8, .03},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
 	paperMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
 		Start: []float64{328}, Velocity: []float64{-3},
 		Lower: &motion.WrapLimit{Boundary: -800, Restart: 0, Inclusive: true},
@@ -58,7 +72,6 @@ func (s *Scene) beatDis() {
 		s.err = err
 		return
 	}
-	xPhase := 0.0
 	s.render = func() {
 		clearBlack(s.Canvas)
 		scroll.Clear()
@@ -72,11 +85,10 @@ func (s *Scene) beatDis() {
 		}
 		paperMotion.Step()
 		s.draw(s.Canvas, stage, 64, 60)
-		xOffset := 360 + 180*math.Cos(xPhase/60)
-		xPhase += .8
-		for i, letter := range letters {
-			phase[i] += .03
-			s.draw(s.Canvas, letter, xOffset+100*math.Sin(phase[i]), 186+84*math.Cos(phase[i]*1.5))
+		letterGroup.Draw(s.Canvas)
+		if err := letterGroup.Update(kit.Frame{}); err != nil {
+			s.err = err
+			return
 		}
 		pattern.DrawAt(scroll, scrollBack, scrollMotion.At(0), 34)
 		scrollMotion.Step()
