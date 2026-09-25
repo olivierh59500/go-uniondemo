@@ -2,7 +2,6 @@ package screens
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/motion"
@@ -37,7 +36,6 @@ func buildDiskCopier(s *Scene) {
 	}
 	var copying, held bool
 	var introTick, copyTick, textIndex int
-	var tiles [3]float64
 	rasterMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
 		Start: []float64{174}, Velocity: []float64{-1.5},
 		Lower: &motion.WrapLimit{Boundary: -974, Restart: 174, Inclusive: true},
@@ -59,8 +57,13 @@ func buildDiskCopier(s *Scene) {
 		s.err = err
 		return
 	}
+	lcdMotion, err := motion.NewGatedWrapBank(presets.UnionDiskCopierLCDMotion())
+	if err != nil {
+		s.err = err
+		return
+	}
 	x, copyX := -640.0, 0.0
-	reset := func() { introTick, copyTick = 0, 0; tiles = [3]float64{}; x, copyX = -640, 0 }
+	reset := func() { introTick, copyTick = 0, 0; lcdMotion.Reset(); x, copyX = -640, 0 }
 	s.input = func(in Input) {
 		if in.Action && !held {
 			reset()
@@ -121,16 +124,12 @@ func buildDiskCopier(s *Scene) {
 				if (copyTick-int(opStart*2))%10 < 5 {
 					s.draw(stage, led, 280, 189)
 				}
-				tile := int(math.Floor(tiles[operation]))
+				tile := lcdMotion.Frame(operation)
 				s.part(stage, lcd, lcdAtlas.Region(tile), 306, 249, 1, 1)
 			}
-			for i, begin := range []float64{120, 500, 760} {
-				if time > begin {
-					tiles[i] += .35
-					if tiles[i] > 82 {
-						tiles[i] = 0
-					}
-				}
+			if err := lcdMotion.StepAt(time); err != nil {
+				s.err = err
+				return
 			}
 			copyX--
 			if copyX <= -640 {
