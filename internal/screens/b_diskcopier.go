@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 	"github.com/olivierh59500/democonstructionkit/timeline"
 )
 
@@ -16,6 +17,11 @@ func init() { factories["diskcopier"] = buildDiskCopier }
 func buildDiskCopier(s *Scene) {
 	stage, textLayer := s.surface(640, 480), s.surface(640, 14)
 	panel, led, lcd, raster := s.image("diskcopier.png"), s.image("led_on.png"), s.image("lcd.png"), s.image("rasters.png")
+	lcdAtlas, err := sprites.NewAtlas(sprites.AtlasConfig{Image: lcd, TileW: 30, TileH: 22})
+	if err != nil {
+		s.err = err
+		return
+	}
 	font := s.bitmap(s.image("font.png"), "union-diskcopier")
 	var red, green [8]*ebiten.Image
 	var strips [6]*ebiten.Image
@@ -116,8 +122,7 @@ func buildDiskCopier(s *Scene) {
 					s.draw(stage, led, 280, 189)
 				}
 				tile := int(math.Floor(tiles[operation]))
-				columns := max(1, lcd.Bounds().Dx()/30)
-				s.part(stage, lcd, unionRegion(float64(tile%columns*30), float64(tile/columns*22), 30, 22), 306, 249, 1, 1)
+				s.part(stage, lcd, lcdAtlas.Region(tile), 306, 249, 1, 1)
 			}
 			for i, begin := range []float64{120, 500, 760} {
 				if time > begin {

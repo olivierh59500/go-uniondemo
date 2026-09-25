@@ -82,6 +82,9 @@ Disk Copier now selects its copy stages through `timeline.CueRanges` and its
 eight palette images through `timeline.SteppedEnvelope`. The messages, controls
 and LED/LCD images remain scene data. Nine captures through its early and late
 copy operations match the previous screen pixel for pixel.
+Its LCD strip now uses `sprites.Atlas` for cached tiles and absolute source
+regions; the existing fractional-region painter and three operation clocks
+keep their authored sampling behavior.
 Scene clocks advance only in Update; rendering does not advance animation.
 Wow and Replicants use `composite.RasterOverlay` for their masked raster
 material. Their opposite phase directions and inclusive wrap boundaries stay
