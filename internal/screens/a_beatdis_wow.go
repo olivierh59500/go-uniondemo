@@ -7,6 +7,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/composite"
+	"github.com/olivierh59500/democonstructionkit/motion"
 )
 
 func init() {
@@ -41,22 +42,35 @@ func (s *Scene) beatDis() {
 		return
 	}
 	phase := [8]float64{.2, .4, .6, .8, 1, 1.4, 1.6, 1.8}
-	paperY, scrollX, xPhase := 328.0, 0.0, 0.0
+	paperMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
+		Start: []float64{328}, Velocity: []float64{-3},
+		Lower: &motion.WrapLimit{Boundary: -800, Restart: 0, Inclusive: true},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	scrollMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
+		Start: []float64{0}, Velocity: []float64{-3},
+		Lower: &motion.WrapLimit{Boundary: -560, Restart: 0, Inclusive: true},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	xPhase := 0.0
 	s.render = func() {
 		clearBlack(s.Canvas)
 		scroll.Clear()
 		stage.Fill(color.RGBA{R: 160, A: 255})
 		s.draw(s.Canvas, backdrop, 0, 0)
-		if paperY > 0 {
+		if paperMotion.At(0) > 0 {
 			// Preserve the wallpaper's initial entrance before its first full repeat.
-			s.draw(stage, paper, 0, paperY)
+			s.draw(stage, paper, 0, paperMotion.At(0))
 		} else {
-			wallpaper.DrawAt(stage, paper, 0, paperY)
+			wallpaper.DrawAt(stage, paper, 0, paperMotion.At(0))
 		}
-		paperY -= 3
-		if paperY <= -800 {
-			paperY = 0
-		}
+		paperMotion.Step()
 		s.draw(s.Canvas, stage, 64, 60)
 		xOffset := 360 + 180*math.Cos(xPhase/60)
 		xPhase += .8
@@ -64,11 +78,8 @@ func (s *Scene) beatDis() {
 			phase[i] += .03
 			s.draw(s.Canvas, letter, xOffset+100*math.Sin(phase[i]), 186+84*math.Cos(phase[i]*1.5))
 		}
-		pattern.DrawAt(scroll, scrollBack, scrollX, 34)
-		scrollX -= 3
-		if scrollX <= -560 {
-			scrollX = 0
-		}
+		pattern.DrawAt(scroll, scrollBack, scrollMotion.At(0), 34)
+		scrollMotion.Step()
 		ring.Step()
 		ring.DrawAt(scroll, 0, 0)
 		s.draw(s.Canvas, scroll, 96, 357)
@@ -95,26 +106,26 @@ func (s *Scene) wowScroller() {
 		s.err = err
 		return
 	}
-	backY, frontY := 0.0, 0.0
+	panels, err := motion.NewWrapBank(motion.WrapBankConfig{
+		Start: []float64{0, 0}, Velocity: []float64{-2},
+		Lower: &motion.WrapLimit{Boundary: -417, Restart: -17, Inclusive: true},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
 	s.render = func() {
 		clearBlack(s.Canvas)
 		stage.Clear()
 		scroll.Clear()
-		s.draw(stage, back, 0, backY)
-		backY -= 2
-		if backY <= -417 {
-			backY = -17
-		}
+		s.draw(stage, back, 0, panels.At(0))
 		ring.Step()
 		ring.DrawAt(scroll, 0, 10)
 		rasterFill.Draw(scroll)
 		rasterFill.Step()
 		s.transform(stage, scroll, 0, 0, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
-		s.draw(stage, front, 0, frontY)
-		frontY -= 2
-		if frontY <= -417 {
-			frontY = -17
-		}
+		s.draw(stage, front, 0, panels.At(1))
+		panels.Step()
 		s.draw(s.Canvas, stage, 64, 60)
 	}
 }

@@ -35,8 +35,15 @@ func buildTNT2(s *Scene) {
 		s.err = err
 		return
 	}
-	positions := [3]float64{-640, -640, -640}
-	speeds := [3]float64{-2, -4, -6}
+	parallax, err := motion.NewWrapBank(motion.WrapBankConfig{
+		Start: []float64{-640, -640, -640}, Velocity: []float64{-2, -4, -6},
+		Lower: &motion.WrapLimit{Boundary: -640, Restart: 0},
+		Upper: &motion.WrapLimit{Boundary: 0, Restart: -640},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
 	scrollX, scrollSpeed := -640.0, 4.0
 	direction, held := -1.0, false
 	s.input = func(in Input) {
@@ -48,18 +55,22 @@ func buildTNT2(s *Scene) {
 		}
 		switch in.Number {
 		case 1:
-			speeds[0] = direction * 2
+			if err := parallax.SetVelocity(0, direction*2); err != nil {
+				s.err = err
+			}
 		case 2:
-			speeds[1] += direction
+			if err := parallax.AddVelocity(1, direction); err != nil {
+				s.err = err
+			}
 		case 3:
-			speeds[2] += direction
+			if err := parallax.AddVelocity(2, direction); err != nil {
+				s.err = err
+			}
 		case 4:
 			scrollSpeed = max(0, min(9, scrollSpeed-direction))
 		}
 		if in.Action && !held {
-			for i := range speeds {
-				speeds[i] = -speeds[i]
-			}
+			parallax.ReverseAll()
 		}
 		held = in.Action
 		if in.Up {
@@ -73,15 +84,9 @@ func buildTNT2(s *Scene) {
 		clearBlack(s.Canvas)
 		stage.Clear()
 		s.draw(stage, back, 0, 0)
+		parallax.Step()
 		for i, layer := range layers {
-			positions[i] += speeds[i]
-			if positions[i] > 0 {
-				positions[i] = -640
-			}
-			if positions[i] < -640 {
-				positions[i] = 0
-			}
-			backgrounds.DrawAt(stage, layer, positions[i], 0)
+			backgrounds.DrawAt(stage, layer, parallax.At(i), 0)
 		}
 		if err := textView.DrawWindow(stage, scrollX, 180, 640); err != nil {
 			s.err = err
@@ -175,22 +180,32 @@ func buildLevel16(s *Scene) {
 		return
 	}
 	s.closers = append(s.closers, vertical.Close)
-	waterY, rasterY, phase := 0.0, 120.0, 0.0
+	waterMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
+		Start: []float64{0}, Velocity: []float64{2},
+		Upper: &motion.WrapLimit{Boundary: 220, Restart: 0, Inclusive: true},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	rasterMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
+		Start: []float64{120}, Velocity: []float64{-2},
+		Lower: &motion.WrapLimit{Boundary: -25, Restart: 120, Inclusive: true},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	phase := 0.0
 	orbit := motion.DefaultNestedOrbit(motion.Point{X: 384, Y: 268}, motion.Point{X: 192, Y: 536 / 2.7})
 	s.render = func() {
 		clearBlack(s.Canvas)
 		s.err = vertical.Update(kit.Frame{Tick: s.Frame})
 		vertical.Draw(s.Canvas)
-		s.draw(s.Canvas, water, 20, waterY)
-		waterY += 2
-		if waterY >= 220 {
-			waterY = 0
-		}
-		s.draw(s.Canvas, raster, 300, rasterY)
-		rasterY -= 2
-		if rasterY <= -25 {
-			rasterY = 120
-		}
+		s.draw(s.Canvas, water, 20, waterMotion.At(0))
+		waterMotion.Step()
+		s.draw(s.Canvas, raster, 300, rasterMotion.At(0))
+		rasterMotion.Step()
 		s.draw(s.Canvas, back, 0, 0)
 		phase += .008
 		position := orbit.At(phase)

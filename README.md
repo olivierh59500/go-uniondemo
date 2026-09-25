@@ -85,6 +85,10 @@ Replicants pixel captures predate this movement correction; its raster
 handoffs remain unchanged. The two bouncing raster banks now use DCK's
 `sprites.Train` with `motion.BounceBank`; ten frames around the bounce
 boundaries match the previous implementation pixel for pixel.
+Beat Dis, Wow, TNT2 and Level 16 now share `motion.WrapBank` for their
+independent scrolling layers. Thirty-five checkpoints, including TNT2 control
+changes and strict/inclusive wrap boundaries, match the previous screens pixel
+for pixel.
 
 ## Validation and frame captures
 
