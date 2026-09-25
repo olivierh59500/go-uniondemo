@@ -110,6 +110,9 @@ pulse now use independent DCK motion/timeline controllers. Its character crop
 comes from `sprites.Atlas`, while door navigation remains local. Nine captures
 around the palette, panorama and logo boundaries match the previous menu pixel
 for pixel.
+The input-driven hall and banner also use `motion.WalkParallax` with separate
+speeds and directional wrap limits. Eleven walking captures, including the
+large hall wrap, match the prior menu pixel for pixel.
 
 ## Validation and frame captures
 

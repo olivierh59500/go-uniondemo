@@ -48,6 +48,7 @@ type state struct {
 	paletteCycle             *timeline.PacedIndex
 	characterCycle           *timeline.PacedIndex
 	logoMotion               *motion.HoldBounce
+	walkMotion               *motion.WalkParallax
 }
 
 func newState() state {
@@ -71,11 +72,16 @@ func newState() state {
 	if err != nil {
 		panic(err)
 	}
+	walkMotion, err := motion.NewWalkParallax(presets.UnionMenuWalkParallax(hallLength))
+	if err != nil {
+		panic(err)
+	}
 	return state{
 		charleyY: 90, facing: 1,
 		coverWidth: cover.At(0), logoScale: logoMotion.At(),
 		panorama: panorama, cover: cover, paletteCycle: paletteCycle,
 		characterCycle: characterCycle, logoMotion: logoMotion,
+		walkMotion: walkMotion,
 	}
 }
 
@@ -121,18 +127,9 @@ func (s *state) update(in Input) string {
 func (s *state) move(dx, dy int) {
 	if dx != 0 {
 		s.facing = dx
-		s.backX -= dx * 5
-		if s.backX <= -hallLength {
-			s.backX = 0
-		} else if s.backX >= 0 {
-			s.backX = -hallLength
-		}
-		s.bannerX -= dx * 3
-		if dx > 0 && s.bannerX <= -94 {
-			s.bannerX = -78
-		} else if dx < 0 && s.bannerX >= -78 {
-			s.bannerX = -94
-		}
+		s.walkMotion.Advance(dx)
+		s.backX = int(s.walkMotion.At(0))
+		s.bannerX = int(s.walkMotion.At(1))
 		s.animateCharacter()
 	}
 	if dy != 0 {
@@ -162,6 +159,7 @@ func (s *state) positionDoor(id string) {
 	for _, d := range doors {
 		if d.id == id {
 			s.backX = -(d.min + d.max) / 2
+			s.walkMotion.Set(0, float64(s.backX))
 			s.charleyY = 60
 			s.moveDelay = 0
 			return
