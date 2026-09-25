@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
+	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 	"github.com/olivierh59500/democonstructionkit/sprites"
 )
@@ -49,9 +50,28 @@ func (s *Scene) replicants() {
 	if s.err != nil {
 		return
 	}
-	topY, bottomY := [3]float64{94, 124, 154}, [3]float64{204, 234, 264}
-	topDY, bottomDY := [3]float64{2, 2, 2}, [3]float64{-2, -2, -2}
-	topRasters, bottomRasters := [3]*ebiten.Image{pink, green, brown}, [3]*ebiten.Image{brown, green, pink}
+	topRasters, err := sprites.NewTrain(sprites.TrainConfig{
+		Images: []*ebiten.Image{pink, green, brown}, ScaleX: 390,
+		Filter: ebiten.FilterNearest, Blend: ebiten.BlendSourceOver,
+		Y: sprites.TrainAxis{Offset: 60, Bounce: &motion.BounceBankConfig{
+			Start: []float64{94, 124, 154}, Velocity: []float64{2}, Min: 94, Max: 160,
+		}},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	bottomRasters, err := sprites.NewTrain(sprites.TrainConfig{
+		Images: []*ebiten.Image{brown, green, pink}, ScaleX: 390,
+		Filter: ebiten.FilterNearest, Blend: ebiten.BlendSourceOver,
+		Y: sprites.TrainAxis{Offset: 60, Bounce: &motion.BounceBankConfig{
+			Start: []float64{204, 234, 264}, Velocity: []float64{-2}, Min: 204, Max: 270,
+		}},
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
 	formation, err := replicantsFormation()
 	if err != nil {
 		s.err = err
@@ -95,22 +115,16 @@ func (s *Scene) replicants() {
 			scrollX = -640
 		}
 		s.draw(stage, main, 0, 0)
-		for i := range topY {
-			topY[i] += topDY[i]
-			if topY[i] < 94 || topY[i] > 160 {
-				topDY[i] = -topDY[i]
-			}
-			bottomY[i] += bottomDY[i]
-			if bottomY[i] < 204 || bottomY[i] > 270 {
-				bottomDY[i] = -bottomDY[i]
-			}
+		if err := topRasters.Update(kit.Frame{}); err != nil {
+			s.err = err
+			return
 		}
-		for i, raster := range topRasters {
-			s.transform(s.Canvas, raster, 0, 60+topY[i], 390, 1, 0, 0, 0, 1, ebiten.BlendSourceOver)
+		if err := bottomRasters.Update(kit.Frame{}); err != nil {
+			s.err = err
+			return
 		}
-		for i, raster := range bottomRasters {
-			s.transform(s.Canvas, raster, 0, 60+bottomY[i], 390, 1, 0, 0, 0, 1, ebiten.BlendSourceOver)
-		}
+		topRasters.Draw(s.Canvas)
+		bottomRasters.Draw(s.Canvas)
 		s.draw(s.Canvas, stage, 64, 60)
 		rasterFill.Step()
 		s.draw(rasterStage, mask, 0, 0)

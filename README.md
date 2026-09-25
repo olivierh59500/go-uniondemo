@@ -82,7 +82,9 @@ editable in DCK. Replicants arranges its letter sprites in a resting row and
 uses DCK's `motion.CuedFormation` with `sprites.Group` to sequence staggered
 horizontal, vertical, arcing and compressing trajectories. The six old
 Replicants pixel captures predate this movement correction; its raster
-handoffs remain unchanged.
+handoffs remain unchanged. The two bouncing raster banks now use DCK's
+`sprites.Train` with `motion.BounceBank`; ten frames around the bounce
+boundaries match the previous implementation pixel for pixel.
 
 ## Validation and frame captures
 
