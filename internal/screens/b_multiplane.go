@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/presets"
@@ -28,26 +29,20 @@ func buildMultiplane(s *Scene) {
 		s.err = err
 		return
 	}
-	planes, err := scrolling.NewPlanes(scrolling.PlanesConfig{
-		Slots: presets.TCBPlaneSlots(unionMultiplaneText, 32), Forms: presets.TCBScrollForms(), Visible: 30, PhaseStep: .02,
-		Projection: unionMultiplaneProjection(),
-	})
-	if err != nil {
-		s.err = err
-		return
-	}
 	spec, _ := presets.FindFont("tcb-multi-plane-3d-scroller")
 	metrics, err := spec.Build(font.Bounds())
 	if err != nil {
 		s.err = err
 		return
 	}
-	renderer, err := scrolling.NewPlaneRenderer(scrolling.Face{Atlas: font, Metrics: metrics}, rasters)
+	scrollConfig := presets.TCBProjectedScroll(unionMultiplaneText, 32, scrolling.Face{Atlas: font, Metrics: metrics}, rasters)
+	scrollConfig.Projected.Planes.Projection = unionMultiplaneProjection()
+	scroll, err := scrolling.New(scrollConfig)
 	if err != nil {
 		s.err = err
 		return
 	}
-	s.closers = append(s.closers, renderer.Close)
+	s.closers = append(s.closers, scroll.Close)
 	bands, err := composite.NewBands(presets.UnionMountainBands())
 	if err != nil {
 		s.err = err
@@ -78,11 +73,11 @@ func buildMultiplane(s *Scene) {
 		logoRows.Draw(stage)
 		face.Step()
 		face.DrawAt(stage, 160, 88)
-		if err := planes.Step(4); err != nil {
+		if err := scroll.Update(kit.Frame{}); err != nil {
 			s.err = err
 			return
 		}
-		renderer.Draw(stage, planes.Points(), scrolling.PlaneDraw{ScaleX: 1, ScaleY: 1})
+		scroll.Draw(stage)
 		s.transform(s.Canvas, stage, 64, 60, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
 	}
 }

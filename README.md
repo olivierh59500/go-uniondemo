@@ -124,6 +124,8 @@ Its central two-face logo also uses `sprites.AxisFlip` with a strict saw cycle.
 Eleven captures around the face changes and later motion remain pixel-identical.
 The large logo's 32 moving rows now use `composite.ProfileImage`; thirteen
 captures at both table joins, the wrap and face changes remain pixel-identical.
+Its projected text now uses `scrolling.New` with Union's own projection bias.
+Nine captures through frame 8,000 remain pixel-identical, including late forms.
 
 ## Validation and frame captures
 
