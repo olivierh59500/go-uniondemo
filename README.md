@@ -122,6 +122,8 @@ its own source-index phases. Eight captures at both section joins and the
 profile wrap remain pixel-identical.
 Its central two-face logo also uses `sprites.AxisFlip` with a strict saw cycle.
 Eleven captures around the face changes and later motion remain pixel-identical.
+The large logo's 32 moving rows now use `composite.ProfileImage`; thirteen
+captures at both table joins, the wrap and face changes remain pixel-identical.
 
 ## Validation and frame captures
 

@@ -48,7 +48,6 @@ func buildMultiplane(s *Scene) {
 		return
 	}
 	s.closers = append(s.closers, renderer.Close)
-	batch := composite.NewQuadBatch(64)
 	bands, err := composite.NewBands(presets.UnionMountainBands())
 	if err != nil {
 		s.err = err
@@ -62,7 +61,12 @@ func buildMultiplane(s *Scene) {
 		s.err = err
 		return
 	}
-	counter := 0
+	logoRows, err := composite.NewProfileImage(logo.SubImage(image.Rect(0, 16, 303, 48)).(*ebiten.Image), presets.TCBLogoRowProfile(profile, 303))
+	if err != nil {
+		s.err = err
+		return
+	}
+	s.closers = append(s.closers, logoRows.Close)
 	s.render = func() {
 		clearBlack(s.Canvas)
 		background.Clear()
@@ -70,15 +74,8 @@ func buildMultiplane(s *Scene) {
 		bands.Step()
 		bands.DrawAt(background, mountains, 0, 0)
 		s.draw(s.Canvas, background, 64, 60)
-		counter++
-		if counter > len(profile)-80 {
-			counter = 0
-		}
-		batch.Begin(stage, logo)
-		for i := 0; i < 32; i++ {
-			batch.Rect(image.Rect(0, 16+i, 303, 17+i), float32(8+profile[counter+i]), float32(96+i), 303, 1)
-		}
-		batch.Flush()
+		logoRows.Advance()
+		logoRows.Draw(stage)
 		face.Step()
 		face.DrawAt(stage, 160, 88)
 		if err := planes.Step(4); err != nil {
