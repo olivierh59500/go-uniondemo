@@ -6,8 +6,10 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 )
 
 func init() { factories["replicants"] = (*Scene).replicants }
@@ -16,9 +18,9 @@ func (s *Scene) replicants() {
 	main, mask, rasters := s.image("overlay.png"), s.image("rastersOverlay.png"), s.image("rasters.png")
 	blue, red := s.image("fontBlue.png"), s.image("fontRed.png")
 	pink, green, brown := s.image("rastersPink.png"), s.image("rastersGreen.png"), s.image("rastersBrown.png")
-	var sprites [14]*ebiten.Image
+	var glyphs [14]*ebiten.Image
 	for i, name := range []string{"T", "H", "E", "Space", "R", "E", "P", "L", "I", "C", "A", "N", "T", "S"} {
-		sprites[i] = s.image("sprite" + name + ".png")
+		glyphs[i] = s.image("sprite" + name + ".png")
 	}
 	if s.err != nil {
 		return
@@ -50,9 +52,18 @@ func (s *Scene) replicants() {
 	topY, bottomY := [3]float64{94, 124, 154}, [3]float64{204, 234, 264}
 	topDY, bottomDY := [3]float64{2, 2, 2}, [3]float64{-2, -2, -2}
 	topRasters, bottomRasters := [3]*ebiten.Image{pink, green, brown}, [3]*ebiten.Image{brown, green, pink}
-	phase := [14]float64{}
-	for i := range phase {
-		phase[i] = float64(i) * .5
+	formation, err := replicantsFormation()
+	if err != nil {
+		s.err = err
+		return
+	}
+	letters, err := sprites.NewGroup(sprites.GroupConfig{
+		Frames: glyphs[:], Count: len(glyphs), FrameStride: 1,
+		Formation: formation.At, Speed: 1, Filter: ebiten.FilterNearest,
+	})
+	if err != nil {
+		s.err = err
+		return
 	}
 	scrollX, scrollSpeed := -640.0, 6.0
 	previous := Input{}
@@ -105,9 +116,10 @@ func (s *Scene) replicants() {
 		s.draw(rasterStage, mask, 0, 0)
 		rasterFill.Draw(rasterStage)
 		s.draw(s.Canvas, rasterStage, 64, 206)
-		for i, sprite := range sprites {
-			phase[i] += .08
-			s.draw(s.Canvas, sprite, 64+40+float64(i)*40+30*math.Cos(phase[i]), 60+180+30*math.Sin(phase[i]))
+		if err := letters.Update(kit.Frame{Time: float64(s.Frame) / 60}); err != nil {
+			s.err = err
+			return
 		}
+		letters.Draw(s.Canvas)
 	}
 }
