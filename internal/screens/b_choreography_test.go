@@ -6,6 +6,7 @@ import (
 
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
+	"github.com/olivierh59500/democonstructionkit/timeline"
 )
 
 func TestUnionSolidObjects(t *testing.T) {
@@ -66,6 +67,14 @@ func TestUnionMultiplaneTopLeftProjection(t *testing.T) {
 }
 
 func TestUnionCopyStages(t *testing.T) {
+	ranges, err := timeline.NewCueRanges(presets.UnionDiskCopierCueRanges())
+	if err != nil {
+		t.Fatal(err)
+	}
+	palette, err := timeline.NewSteppedEnvelope(presets.UnionDiskCopierFade())
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		time      float64
 		operation int
@@ -76,7 +85,10 @@ func TestUnionCopyStages(t *testing.T) {
 		{740, -1, false}, {760.5, 2, true}, {999.5, 2, true}, {1000, -1, false}, {1000.5, -1, true},
 		{1100, -1, false}, {1120, -1, false}, {1120.5, -1, true}, {1220.5, -1, true},
 	} {
-		_, _, line, operation := unionCopyStage(test.time)
+		line, operation := "", -1
+		if index, _, active := ranges.At(test.time); active {
+			line, operation = unionCopyStages[index].line, unionCopyStages[index].operation
+		}
 		if operation != test.operation || (line != "") != test.message {
 			t.Errorf("time %g: operation %d, message %q", test.time, operation, line)
 		}
@@ -85,7 +97,7 @@ func TestUnionCopyStages(t *testing.T) {
 		time  float64
 		shade int
 	}{{0, 7}, {2, 6}, {12, 1}, {14, 0}, {84, 0}, {86, 1}, {96, 6}, {98, 7}, {100, 7}} {
-		if got := unionCopyFade(test.time, 0, 100); got != test.shade {
+		if got := palette.At(test.time, 0, 100); got != test.shade {
 			t.Errorf("fade at %g = %d, want %d", test.time, got, test.shade)
 		}
 	}

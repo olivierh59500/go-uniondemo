@@ -6,6 +6,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/timeline"
 )
 
 func init() { factories["diskcopier"] = buildDiskCopier }
@@ -38,6 +40,19 @@ func buildDiskCopier(s *Scene) {
 		s.err = err
 		return
 	}
+	cues, err := timeline.NewCueRanges(presets.UnionDiskCopierCueRanges())
+	if err != nil {
+		s.err = err
+		return
+	}
+	palette, err := timeline.NewSteppedEnvelope(presets.UnionDiskCopierFade())
+	if err != nil || cues.Len() != len(unionCopyStages) {
+		if err == nil {
+			err = fmt.Errorf("disk copier cue ranges and scene stages differ")
+		}
+		s.err = err
+		return
+	}
 	x, copyX := -640.0, 0.0
 	reset := func() { introTick, copyTick = 0, 0; tiles = [3]float64{}; x, copyX = -640, 0 }
 	s.input = func(in Input) {
@@ -65,7 +80,7 @@ func buildDiskCopier(s *Scene) {
 		s.transform(stage, panel, 320, 200, 1, 1, 0, float64(panel.Bounds().Dx())/2, float64(panel.Bounds().Dy())/2, 1, ebiten.BlendSourceOver)
 		if !copying {
 			time := float64(introTick) * .5
-			s.draw(textLayer, red[unionCopyFade(time, 0, 100)], x, 0)
+			s.draw(textLayer, red[palette.At(time, 0, 100)], x, 0)
 			if time <= 101 {
 				font.Print(textLayer, unionCopyText[textIndex], 0, 0, 1, 1)
 			}
@@ -80,8 +95,12 @@ func buildDiskCopier(s *Scene) {
 			}
 		} else {
 			time := float64(copyTick) * .5
-			start, end, line, operation := unionCopyStage(time)
-			s.draw(textLayer, green[unionCopyFade(time, start, end)], copyX, 0)
+			start, end, line, operation := time+1, time+1, "", -1
+			if index, window, active := cues.At(time); active {
+				start, end = window.Start, window.End
+				line, operation = unionCopyStages[index].line, unionCopyStages[index].operation
+			}
+			s.draw(textLayer, green[palette.At(time, start, end)], copyX, 0)
 			if line != "" {
 				font.Print(textLayer, line, 0, 0, 1, 1)
 			}
@@ -121,39 +140,17 @@ func buildDiskCopier(s *Scene) {
 	}
 }
 
-func unionCopyFade(t, start, end float64) int {
-	if t < start {
-		return 7
-	}
-	if t < start+14 {
-		return max(0, min(7, 7-int((t-start)/2)))
-	}
-	if t >= end-16 {
-		return max(0, min(7, int((t-end+16)/2)))
-	}
-	return 0
-}
-
-func unionCopyStage(t float64) (start, end float64, line string, operation int) {
-	operation = -1
-	switch {
-	case t < 100:
-		return 0, 100, " PLEASE INSERT WRT-PROTECTED SOURCE-DISK ", -1
-	case t > 120 && t < 360:
-		return 120, 360, "         PLEASE WAIT...  READING         ", 0
-	case t > 380 && t < 480:
-		return 380, 480, "     PLEASE INSERT DESTINATION DISK      ", -1
-	case t > 500 && t < 740:
-		return 500, 740, "        PLEASE WAIT... FORMATTING        ", 1
-	case t > 760 && t < 1000:
-		return 760, 1000, "         PLEASE WAIT...  WRITING         ", 2
-	case t > 1000 && t < 1100:
-		return 1000, 1100, "            ALL DONE!  ENJOY!            ", -1
-	case t > 1120:
-		return 1120, math.Inf(1), "   PRESS '0' TO EXIT THE COPY PROGRAM    ", -1
-	default:
-		return t + 1, t + 1, "", -1
-	}
+var unionCopyStages = [...]struct {
+	line      string
+	operation int
+}{
+	{" PLEASE INSERT WRT-PROTECTED SOURCE-DISK ", -1},
+	{"         PLEASE WAIT...  READING         ", 0},
+	{"     PLEASE INSERT DESTINATION DISK      ", -1},
+	{"        PLEASE WAIT... FORMATTING        ", 1},
+	{"         PLEASE WAIT...  WRITING         ", 2},
+	{"            ALL DONE!  ENJOY!            ", -1},
+	{"   PRESS '0' TO EXIT THE COPY PROGRAM    ", -1},
 }
 
 var unionCopyText = []string{
