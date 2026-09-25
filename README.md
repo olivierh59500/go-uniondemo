@@ -120,6 +120,8 @@ large hall wrap, match the prior menu pixel for pixel.
 Multi-Plane's large logo now compiles the shared TCB row-wave sections with
 its own source-index phases. Eight captures at both section joins and the
 profile wrap remain pixel-identical.
+Its central two-face logo also uses `sprites.AxisFlip` with a strict saw cycle.
+Eleven captures around the face changes and later motion remain pixel-identical.
 
 ## Validation and frame captures
 

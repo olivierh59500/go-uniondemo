@@ -8,6 +8,7 @@ import (
 	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 )
 
 func init() { factories["multiplane"] = buildMultiplane }
@@ -18,6 +19,15 @@ func buildMultiplane(s *Scene) {
 	center, centerFlipped := s.surface(80, 16), s.surface(80, 16)
 	s.part(center, logo, unionRegion(114, 0, 79, 15), 0, 0, 1, 1)
 	s.part(centerFlipped, logo, unionRegion(114, 0, 79, 15), 0, 16, 1, -1)
+	face, err := sprites.NewAxisFlip(sprites.AxisFlipConfig{
+		Front: center, Back: centerFlipped,
+		Saw:    &motion.SawToggleConfig{Start: 0, Velocity: .08, Boundary: 1, Restart: -1},
+		Filter: ebiten.FilterNearest, Blend: ebiten.BlendSourceOver,
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
 	planes, err := scrolling.NewPlanes(scrolling.PlanesConfig{
 		Slots: presets.TCBPlaneSlots(unionMultiplaneText, 32), Forms: presets.TCBScrollForms(), Visible: 30, PhaseStep: .02,
 		Projection: unionMultiplaneProjection(),
@@ -52,7 +62,7 @@ func buildMultiplane(s *Scene) {
 		s.err = err
 		return
 	}
-	counter, next, rotation := 0, 0, 0.0
+	counter := 0
 	s.render = func() {
 		clearBlack(s.Canvas)
 		background.Clear()
@@ -69,16 +79,8 @@ func buildMultiplane(s *Scene) {
 			batch.Rect(image.Rect(0, 16+i, 303, 17+i), float32(8+profile[counter+i]), float32(96+i), 303, 1)
 		}
 		batch.Flush()
-		rotation += .08
-		if rotation > 1 {
-			rotation = -1
-			next = 1 - next
-		}
-		img := center
-		if next != 0 {
-			img = centerFlipped
-		}
-		s.transform(stage, img, 160, 88, 1, rotation, 0, 40, 8, 1, ebiten.BlendSourceOver)
+		face.Step()
+		face.DrawAt(stage, 160, 88)
 		if err := planes.Step(4); err != nil {
 			s.err = err
 			return
