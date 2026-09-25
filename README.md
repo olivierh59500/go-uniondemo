@@ -105,6 +105,11 @@ for pixel.
 Beat Dis also uses `motion.HarmonicFormation` and `sprites.Group` for its eight
 letters. A phase table preserves their nonuniform spacing while separate clocks
 control the common horizontal wobble and the individual orbits.
+The menu's panorama, uncover wipe, palette, walking frames and long-held logo
+pulse now use independent DCK motion/timeline controllers. Its character crop
+comes from `sprites.Atlas`, while door navigation remains local. Nine captures
+around the palette, panorama and logo boundaries match the previous menu pixel
+for pixel.
 
 ## Validation and frame captures
 

@@ -1,6 +1,12 @@
 // Package menu presents the Union's walkable screen selection hall.
 package menu
 
+import (
+	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/timeline"
+)
+
 // Input contains the held movement controls and the enter action for one tick.
 type Input struct {
 	Left, Right, Up, Down, Enter bool
@@ -30,49 +36,56 @@ const hallLength = 5506
 // state contains only deterministic animation and navigation data. Rendering
 // never advances it, even when the display refresh rate differs from 60 Hz.
 type state struct {
-	tick                               uint64
-	backX, bannerX, charleyY           int
-	charleyFrame, charleyDelay, facing int
-	moveDelay                          int
-	panoramaX, coverWidth              int
-	logoScale, logoStep                float64
-	logoWait                           int
-	colorIndex, colorDelay             int
+	tick                     uint64
+	backX, bannerX, charleyY int
+	charleyFrame, facing     int
+	moveDelay                int
+	panoramaX, coverWidth    int
+	logoScale                float64
+	colorIndex               int
+	panorama                 *motion.WrapBank
+	cover                    motion.LinearTick
+	paletteCycle             *timeline.PacedIndex
+	characterCycle           *timeline.PacedIndex
+	logoMotion               *motion.HoldBounce
 }
 
 func newState() state {
+	panorama, err := motion.NewWrapBank(presets.UnionMenuPanoramaWrap())
+	if err != nil {
+		panic(err)
+	}
+	cover, err := motion.NewLinearTick(presets.UnionMenuCoverWidth())
+	if err != nil {
+		panic(err)
+	}
+	paletteCycle, err := timeline.NewPacedIndex(presets.UnionMenuPaletteCycle(len(hallColors)))
+	if err != nil {
+		panic(err)
+	}
+	characterCycle, err := timeline.NewPacedIndex(presets.UnionMenuCharacterCycle())
+	if err != nil {
+		panic(err)
+	}
+	logoMotion, err := motion.NewHoldBounce(presets.UnionMenuLogoBounce())
+	if err != nil {
+		panic(err)
+	}
 	return state{
 		charleyY: 90, facing: 1,
-		coverWidth: 840,
-		logoScale:  1, logoStep: -0.04, logoWait: 1000,
+		coverWidth: cover.At(0), logoScale: logoMotion.At(),
+		panorama: panorama, cover: cover, paletteCycle: paletteCycle,
+		characterCycle: characterCycle, logoMotion: logoMotion,
 	}
 }
 
 func (s *state) update(in Input) string {
 	s.tick++
-	s.panoramaX -= 2
-	if s.panoramaX <= -540 {
-		s.panoramaX = -28
-	}
-	s.coverWidth = max(0, s.coverWidth-5)
-	if s.colorDelay >= 3 {
-		s.colorIndex = (s.colorIndex + 1) % len(hallColors)
-		s.colorDelay = 0
-	}
-	s.colorDelay++
-	if s.logoWait <= 5 {
-		s.logoScale += s.logoStep
-		if s.logoScale <= 0 {
-			s.logoScale = 0
-			s.logoStep = 0.04
-		}
-	}
-	if s.logoWait <= 0 && s.logoScale >= 1 {
-		s.logoScale = 1
-		s.logoStep = -0.04
-		s.logoWait = 1000
-	}
-	s.logoWait--
+	s.panorama.Step()
+	s.panoramaX = int(s.panorama.At(0))
+	s.coverWidth = s.cover.At(int(s.tick))
+	s.colorIndex = s.paletteCycle.Step()
+	s.logoScale = s.logoMotion.Step()
 
 	dx, dy := 0, 0
 	if in.Left != in.Right {
@@ -129,11 +142,7 @@ func (s *state) move(dx, dy int) {
 }
 
 func (s *state) animateCharacter() {
-	s.charleyDelay++
-	if s.charleyDelay >= 5 {
-		s.charleyFrame = (s.charleyFrame + 1) % 8
-		s.charleyDelay = 0
-	}
+	s.charleyFrame = s.characterCycle.Step()
 }
 
 func (s *state) selection() string {

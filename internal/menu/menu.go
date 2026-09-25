@@ -14,6 +14,7 @@ import (
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/render"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 )
 
 const (
@@ -31,6 +32,7 @@ type Game struct {
 	backdrop, bannerLogo, bannerPattern, bar, panorama, charley *ebiten.Image
 	bannerSurface, hallSurface, scrollSurface                   *ebiten.Image
 	text                                                        *scrolling.Scrolling
+	charleyAtlas                                                *sprites.Atlas
 	closed                                                      bool
 }
 
@@ -70,6 +72,10 @@ func New(files fs.FS) (_ *Game, err error) {
 	}
 	if (g.charley.Bounds().Dx()/80)*(g.charley.Bounds().Dy()/102) < 8 {
 		return nil, fmt.Errorf("menu: character atlas needs eight 80x102 frames")
+	}
+	g.charleyAtlas, err = sprites.NewAtlas(sprites.AtlasConfig{Image: g.charley, TileW: 80, TileH: 102})
+	if err != nil {
+		return nil, fmt.Errorf("menu: character atlas: %w", err)
 	}
 	atlas, err := g.store.Texture("menu/fontsTexOut2.png")
 	if err != nil {
@@ -126,9 +132,7 @@ func (g *Game) Draw(dst *ebiten.Image) {
 
 	g.hallSurface.Fill(hallColor(g.colorIndex))
 	drawImage(g.hallSurface, g.backdrop, float64(g.backX), 0)
-	columns := g.charley.Bounds().Dx() / 80
-	frame := image.Rect((g.charleyFrame%columns)*80, (g.charleyFrame/columns)*102,
-		(g.charleyFrame%columns+1)*80, (g.charleyFrame/columns+1)*102)
+	frame := g.charleyAtlas.Rect(g.charleyFrame)
 	character := ebiten.DrawImageOptions{}
 	character.GeoM.Scale(float64(g.facing), 1)
 	x := 300
