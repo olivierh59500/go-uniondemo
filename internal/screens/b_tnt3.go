@@ -97,8 +97,8 @@ func buildTNT3(s *Scene) {
 			return
 		}
 		carousel.Draw(stage)
-		caption.Draw(stage)
 		caption.Step()
+		caption.Draw(stage)
 		s.draw(s.Canvas, stage, 64, 68)
 	}
 }
