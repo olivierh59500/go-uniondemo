@@ -7,6 +7,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/modulation"
+	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/presets"
 )
 
 func init() { factories["delta"] = (*Scene).deltaForce }
@@ -27,8 +29,17 @@ func (s *Scene) deltaForce() {
 	}
 	// The introductory title and scrolling text share one continuous wave phase.
 	wave := composite.WaveStrips{Axis: composite.Columns, Thickness: 1, Filter: ebiten.FilterLinear, Waves: []composite.StripWave{{Phase: 10, Amplitude: 50, Spatial: .002, Speed: -.03}}}
-	logoScale, logoStep, goldY := 1.0, .02, 0.0
-	tile, wordMode, wordWait := 0, 0, 200
+	logoClock, err := motion.NewBounceToggle(presets.UnionDeltaLogoFlip())
+	if err != nil {
+		s.err = err
+		return
+	}
+	goldClock, err := motion.NewWrapBank(presets.UnionDeltaGoldWrap())
+	if err != nil {
+		s.err = err
+		return
+	}
+	wordMode, wordWait := 0, 200
 	wordX, wordDX := -640.0, 6.0
 	var voiceChanges [3]modulation.Change[uint8]
 	var ballEnvelopes [3]*modulation.Decay
@@ -50,27 +61,19 @@ func (s *Scene) deltaForce() {
 		wordMerge.Clear()
 		s.draw(s.Canvas, slab, 84, 218)
 		columns := max(1, logos.Bounds().Dx()/640)
+		logoPose := logoClock.Pose()
+		tile := logoPose.Material
 		s.part(logoStage, logos, composite.Region{X: float64(tile % columns * 640), Y: float64(tile / columns * 130), Width: 640, Height: 130}, 0, 0, 1, 1)
-		s.transform(s.Canvas, logoStage, 384, 64, 1, logoScale, 0, 320, 65, 1, ebiten.BlendSourceOver)
-		logoScale -= logoStep
-		if logoScale <= 0 {
-			logoStep = -.02
-			tile = (tile + 1) % 2
-		}
-		if logoScale >= 1 {
-			logoStep = .02
-		}
+		s.transform(s.Canvas, logoStage, 384, 64, 1, logoPose.Value, 0, 320, 65, 1, ebiten.BlendSourceOver)
+		logoClock.Step()
 		for i, volume := range s.VoiceVolumes {
 			frame := int(ballEnvelopes[i].Step(voiceChanges[i].Sample(volume), 1))
 			x := [3]float64{244, 355, 464}[i]
 			s.part(s.Canvas, balls, composite.Region{X: float64(frame * 96), Width: 96, Height: 114}, x, 177, 1, 1)
 		}
-		s.draw(goldStage, gold, 0, 236-goldY)
-		s.draw(goldStage, gold, 0, 354-goldY)
-		goldY -= 3
-		if goldY <= -59 {
-			goldY = 0
-		}
+		s.draw(goldStage, gold, 0, 236-goldClock.At(0))
+		s.draw(goldStage, gold, 0, 354-goldClock.At(0))
+		goldClock.Step()
 		if wordMode == 0 {
 			wordX += wordDX
 			if wordX >= 32 {
