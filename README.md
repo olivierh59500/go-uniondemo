@@ -118,6 +118,10 @@ Beat Dis, Wow, TNT2 and Level 16 now share `motion.WrapBank` for their
 independent scrolling layers. Thirty-five checkpoints, including TNT2 control
 changes and strict/inclusive wrap boundaries, match the previous screens pixel
 for pixel.
+Level 16's moving ball now follows a `motion.TrajectoryClock` over its
+`NestedOrbit` path. The controller caches its position once per frame and
+retains the original advance-before-draw phase; the center, radius and phase
+step remain editable production parameters.
 Beat Dis also uses `motion.HarmonicFormation` and `sprites.Group` for its eight
 letters. A phase table preserves their nonuniform spacing while separate clocks
 control the common horizontal wobble and the individual orbits.

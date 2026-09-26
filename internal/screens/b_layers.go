@@ -179,8 +179,12 @@ func buildLevel16(s *Scene) {
 		s.err = err
 		return
 	}
-	phase := 0.0
 	orbit := motion.DefaultNestedOrbit(motion.Point{X: 384, Y: 268}, motion.Point{X: 192, Y: 536 / 2.7})
+	ballPath, err := motion.NewTrajectoryClock(motion.TrajectoryClockConfig{Sample: orbit.At, Step: .008})
+	if err != nil {
+		s.err = err
+		return
+	}
 	s.render = func() {
 		clearBlack(s.Canvas)
 		s.err = vertical.Update(kit.Frame{Tick: s.Frame})
@@ -190,8 +194,11 @@ func buildLevel16(s *Scene) {
 		rasterLayer.Draw(s.Canvas)
 		rasterLayer.Step()
 		s.draw(s.Canvas, back, 0, 0)
-		phase += .008
-		position := orbit.At(phase)
+		if err := ballPath.Step(); err != nil {
+			s.err = err
+			return
+		}
+		position := ballPath.At()
 		x, y := position.X, position.Y
 		s.transform(s.Canvas, bob, x, y, 1, 1, 0, float64(bob.Bounds().Dx())/2, float64(bob.Bounds().Dy())/2, 1, ebiten.BlendSourceOver)
 	}
