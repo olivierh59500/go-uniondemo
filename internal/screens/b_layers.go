@@ -7,8 +7,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
-	"github.com/olivierh59500/democonstructionkit/geometry"
 	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 	"github.com/olivierh59500/democonstructionkit/sprites"
 )
@@ -102,36 +102,29 @@ func buildTNT2(s *Scene) {
 }
 
 func buildStarballs(s *Scene) {
-	base, mask := s.surface(320, 200), s.surface(320, 200)
 	font, bob1, bob2, logo := s.image("font.png"), s.image("union_bob1.png"), s.image("union_bob2.png"), s.image("union_logo.png")
 	text := " THE TNT CREW PRESENTS STARBALLS, A SCREEN FROM THE UNION DEMO! WATCH THE BALLS CHANGE COLOUR AS THEY CROSS THE LOGO AND THE SCROLLINE. USE UP AND DOWN TO CHANGE THE NUMBER OF STARBALLS. GREETINGS TO ALL MEMBERS OF THE UNION! MUSIC BY MAD MAX.   "
-	scroll := s.ring(mask, font, "union-starballs", text, 3)
-	field, err := sprites.NewProjectedField(sprites.ProjectedFieldConfig{
-		Field: sprites.FieldConfig{Count: 32, Depth: sprites.DepthRespawn, Near: 0, Far: 32,
-			Spawn: func(_ int, reset bool) sprites.Point {
-				p := sprites.Point{X: math.Floor(s.rnd()*49) - 25, Y: math.Floor(s.rnd()*49) - 25, Z: math.Floor(s.rnd()*30) + 1}
-				if reset {
-					p.Z = 32
-				}
-				return p
-			}},
-		View:     sprites.FieldView{Camera: geometry.Camera{Center: geometry.Vec2{X: 160, Y: 100}, Focal: 64, Near: .001}},
-		Velocity: geometry.Vec3{Z: -.2}, Delta: 1, RendererCapacity: 128,
+	scroll, err := scrolling.NewRing(scrolling.RingConfig{
+		Text: text, Font: s.bitmap(font, "union-starballs"), Viewport: 320, Speed: 3, Controls: true,
 	})
 	if err != nil {
 		s.err = err
 		return
 	}
-	s.closers = append(s.closers, field.Close)
-	style := sprites.FieldStyle{DrawImages: true, Sample: func(p sprites.FieldSample, a *sprites.FieldAppearance) bool {
-		if p.X < 0 || p.X > 320 || p.Y < 0 || p.Y > 200 {
-			return false
-		}
-		size := (1 - p.Z/32) * 5 / 8
-		a.ScaleX, a.ScaleY = size, size
-		a.Tint.ScaleAlpha(float32(math.Floor((1-p.Z/32)*255) / 255))
-		return true
-	}}
+	config, err := presets.UnionStarballs(bob1, bob2, s.rnd, func(mask *ebiten.Image) {
+		s.draw(mask, logo, -32, -34)
+		scroll.DrawAt(mask, 0, 188)
+	})
+	if err != nil {
+		s.err = err
+		return
+	}
+	layer, err := sprites.NewMaskedProjectedField(config)
+	if err != nil {
+		s.err = err
+		return
+	}
+	s.closers = append(s.closers, layer.Close)
 	counts := []int{32, 40, 48, 64, 72, 80, 88, 96, 112, 128}
 	selected, held := 0, false
 	s.input = func(in Input) {
@@ -144,27 +137,18 @@ func buildStarballs(s *Scene) {
 			} else {
 				selected = (selected + 1) % len(counts)
 			}
-			s.err = field.ResetCount(counts[selected])
+			s.err = layer.Field().ResetCount(counts[selected])
 		}
 		held = pressed
 	}
 	s.render = func() {
 		s.Canvas.Fill(color.RGBA{B: 64, A: 255})
-		base.Clear()
-		mask.Clear()
-		s.draw(mask, logo, -32, -34)
 		scroll.Step()
-		scroll.DrawAt(mask, 0, 188)
-		if err := field.Update(kit.Frame{}); err != nil {
+		if err := layer.Update(kit.Frame{}); err != nil {
 			s.err = err
 			return
 		}
-		style.Image, style.Blend = bob1, ebiten.BlendSourceOver
-		field.DrawStyle(base, style)
-		style.Image, style.Blend = bob2, ebiten.BlendSourceAtop
-		field.DrawStyle(mask, style)
-		s.transform(s.Canvas, base, 64, 68, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
-		s.transform(s.Canvas, mask, 64, 68, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)
+		layer.Draw(s.Canvas)
 	}
 }
 
