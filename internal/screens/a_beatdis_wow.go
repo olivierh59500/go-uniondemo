@@ -33,7 +33,7 @@ func (s *Scene) beatDis() {
 	if s.err != nil {
 		return
 	}
-	wallpaper, err := composite.NewBackground(composite.BackgroundConfig{Source: image.Rect(0, 0, 640, 800), PeriodY: 800, Filter: ebiten.FilterNearest})
+	wallpaper, err := composite.NewBackground(composite.BackgroundConfig{Source: image.Rect(0, 0, 640, 800), PeriodY: 800, SingleCopyOnEntryY: true, Filter: ebiten.FilterNearest})
 	if err != nil {
 		s.err = err
 		return
@@ -77,12 +77,7 @@ func (s *Scene) beatDis() {
 		scroll.Clear()
 		stage.Fill(color.RGBA{R: 160, A: 255})
 		s.draw(s.Canvas, backdrop, 0, 0)
-		if paperMotion.At(0) > 0 {
-			// Preserve the wallpaper's initial entrance before its first full repeat.
-			s.draw(stage, paper, 0, paperMotion.At(0))
-		} else {
-			wallpaper.DrawAt(stage, paper, 0, paperMotion.At(0))
-		}
+		wallpaper.DrawAt(stage, paper, 0, paperMotion.At(0))
 		paperMotion.Step()
 		s.draw(s.Canvas, stage, 64, 60)
 		letterGroup.Draw(s.Canvas)
