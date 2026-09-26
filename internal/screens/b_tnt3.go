@@ -6,9 +6,9 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/effects"
 	"github.com/olivierh59500/democonstructionkit/geometry"
+	"github.com/olivierh59500/democonstructionkit/presets"
 )
 
 func init() { factories["tnt3"] = buildTNT3 }
@@ -19,34 +19,30 @@ type unionSolidFace struct {
 }
 
 type unionSolidObject struct {
-	points                  []geometry.Vec3
-	groups                  [][]unionSolidFace
-	rotation, camera, speed geometry.Vec3
+	points []geometry.Vec3
+	groups [][]unionSolidFace
 }
 
 func unionSolidMesh(points []geometry.Vec3, faces []unionSolidFace) effects.Mesh {
-	mesh := effects.Mesh{Points: points}
-	for _, face := range faces {
-		c := face.color
-		shade := color.NRGBA{R: uint8(c >> 16), G: uint8(c >> 8), B: uint8(c), A: 255}
-		index := face.indices
-		mesh.Triangles = append(mesh.Triangles, effects.Triangle{Indices: [3]int{index[0], index[1], index[2]}, Color: shade})
-		if index[3] >= 0 {
-			mesh.Triangles = append(mesh.Triangles, effects.Triangle{Indices: [3]int{index[0], index[2], index[3]}, Color: shade})
-		}
+	return effects.SolidMesh(points, unionFaces(faces))
+}
+
+func unionFaces(faces []unionSolidFace) []effects.SolidFace {
+	converted := make([]effects.SolidFace, len(faces))
+	for i, face := range faces {
+		converted[i] = effects.SolidFace{Indices: face.indices, Color: face.color}
 	}
-	return mesh
+	return converted
 }
 
 func unionTNTObjects() []unionSolidObject {
 	spherePoints, sphereFaces := unionTNTSphere()
-	standard := geometry.Vec3{X: .02, Y: .02, Z: .02}
 	return []unionSolidObject{
-		{points: unionUnionPoints, groups: [][]unionSolidFace{unionUnionFaces}, speed: standard},
-		{points: unionTntPoints, groups: [][]unionSolidFace{unionTntFaces}, rotation: geometry.Vec3{Z: math.Pi}, camera: geometry.Vec3{Z: 100}, speed: standard},
-		{points: spherePoints, groups: [][]unionSolidFace{sphereFaces}, speed: standard},
-		{points: unionGliderPoints, groups: [][]unionSolidFace{unionGliderBaseFaces, unionGliderTopFaces}, rotation: geometry.Vec3{X: -math.Pi / 2}, speed: geometry.Vec3{X: .033, Y: .032, Z: .031}},
-		{points: unionCarrierPoints, groups: [][]unionSolidFace{unionCarrierBottomFaces, unionCarrierPlaneFaces, unionCarrierTopFaces}, rotation: geometry.Vec3{X: -math.Pi / 2, Z: math.Pi / 3}, camera: geometry.Vec3{Y: 70, Z: 100}, speed: geometry.Vec3{Z: .02}},
+		{points: unionUnionPoints, groups: [][]unionSolidFace{unionUnionFaces}},
+		{points: unionTntPoints, groups: [][]unionSolidFace{unionTntFaces}},
+		{points: spherePoints, groups: [][]unionSolidFace{sphereFaces}},
+		{points: unionGliderPoints, groups: [][]unionSolidFace{unionGliderBaseFaces, unionGliderTopFaces}},
+		{points: unionCarrierPoints, groups: [][]unionSolidFace{unionCarrierBottomFaces, unionCarrierPlaneFaces, unionCarrierTopFaces}},
 	}
 }
 
@@ -54,36 +50,29 @@ func buildTNT3(s *Scene) {
 	stage, stars := s.surface(640, 400), s.image("stars.png")
 	font := s.bitmap(s.image("fonts.png"), "union-tnt3")
 	objects := unionTNTObjects()
-	models := make([][]*effects.MeshEffect, len(objects))
-	angles := objects[1].rotation
-	var rx, ry, rz geometry.Rotation
+	models := make([]effects.SolidMeshModel, len(objects))
 	for i, object := range objects {
-		for _, group := range object.groups {
-			mesh, err := effects.NewMesh(unionSolidMesh(object.points, group), nil, geometry.Camera{Center: geometry.Vec2{X: 320, Y: 200}, Focal: 200 / math.Tan(25*math.Pi/360), Near: 1})
-			if err != nil {
-				s.err = err
-				return
-			}
-			mesh.CullBackFaces = true
-			// Preserve the object's local Euler order, then face the positive-Z camera.
-			mesh.Deform = func(_ int, p geometry.Vec3, _ float64) geometry.Vec3 {
-				p = rx.Apply(ry.Apply(rz.Apply(p)))
-				return geometry.Vec3{X: p.X, Y: -p.Y, Z: -p.Z}
-			}
-			models[i] = append(models[i], mesh)
-			s.closers = append(s.closers, mesh.Close)
+		models[i].Points = object.points
+		models[i].Groups = make([][]effects.SolidFace, len(object.groups))
+		for j, group := range object.groups {
+			models[i].Groups[j] = unionFaces(group)
 		}
 	}
-	active, pending := 1, 1
-	camera, distance := geometry.Vec3{Z: 10}, 0.0
-	changing, held := false, false
+	carousel, err := effects.NewSolidMeshCarousel(presets.UnionTNTMeshCarousel(models))
+	if err != nil {
+		s.err = err
+		return
+	}
+	s.closers = append(s.closers, carousel.Close)
+	pending, held := 1, false
 	textIndex, textWait := 0, 200
 	textY, textIncrement := -18.0, 2.0
 	s.input = func(in Input) {
 		pressed := in.Action || in.Left || in.Right
+		selection := false
 		if in.Number >= 1 && in.Number <= 5 {
 			pending = in.Number - 1
-			changing = true
+			selection = true
 		}
 		if pressed && !held {
 			if in.Left {
@@ -91,43 +80,22 @@ func buildTNT3(s *Scene) {
 			} else {
 				pending = (pending + 1) % 5
 			}
-			changing = true
+			selection = true
 		}
 		held = pressed
+		if selection {
+			s.err = carousel.Select(pending)
+		}
 	}
 	s.render = func() {
 		clearBlack(s.Canvas)
 		stage.Clear()
-		rotating := distance >= 700
-		if !rotating {
-			distance += 10
-		}
-		if changing {
-			if camera.Z < 10000 {
-				camera.Z += 100
-			} else {
-				active = pending
-				distance = 0
-				camera = objects[active].camera
-				angles = objects[active].rotation
-				changing = false
-			}
-		}
 		s.draw(stage, stars, 0, 0)
-		rx = geometry.RotateXYZ(geometry.Vec3{X: angles.X})
-		ry = geometry.RotateXYZ(geometry.Vec3{Y: angles.Y})
-		rz = geometry.RotateXYZ(geometry.Vec3{Z: angles.Z})
-		for _, mesh := range models[active] {
-			mesh.Transform.Position = geometry.Vec3{X: -camera.X, Y: camera.Y, Z: camera.Z + distance}
-			if err := mesh.Update(kit.Frame{}); err != nil {
-				s.err = err
-				return
-			}
-			mesh.Draw(stage)
+		if err := carousel.Step(); err != nil {
+			s.err = err
+			return
 		}
-		if rotating {
-			angles = angles.Add(objects[active].speed)
-		}
+		carousel.Draw(stage)
 		stage.SubImage(image.Rect(0, 0, 640, 18)).(*ebiten.Image).Fill(color.Black)
 		line := unionTNTText[textIndex]
 		font.Print(stage, line, 320-float64(len(line)*8), textY, 1, 1)

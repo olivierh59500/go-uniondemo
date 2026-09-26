@@ -74,6 +74,9 @@ in Go.
 
 Reusable composition, scrolling, raster deformation, sprite and mesh effects
 come from DCK. Each font supplies its own atlas dimensions and ordering. The
+TNT Crew 3 screen now uses `effects.SolidMeshCarousel` for its five selectable
+objects, grouped face materials, rotation and recessional handoffs; its model
+coordinates and text remain local scene data.
 Hidden screen now draws its four pointers through `sprites.DelayedTrail` with
 editable per-image delays and order. `timeline.PacedIndex` keeps the bar and
 crosshair colors one step apart; the palette and masks remain authored art.
