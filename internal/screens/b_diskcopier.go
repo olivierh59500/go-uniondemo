@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/sprites"
@@ -23,7 +24,6 @@ func buildDiskCopier(s *Scene) {
 	}
 	font := s.bitmap(s.image("font.png"), "union-diskcopier")
 	var red, green [8]*ebiten.Image
-	var strips [6]*ebiten.Image
 	for i := range red {
 		suffix := ""
 		if i > 0 {
@@ -31,19 +31,14 @@ func buildDiskCopier(s *Scene) {
 		}
 		red[i], green[i] = s.image("fontback"+suffix+".png"), s.image("fontbackg"+suffix+".png")
 	}
-	for i := range strips {
-		strips[i] = s.surface(768, 32)
-	}
 	var copying, held bool
 	var introTick, copyTick, textIndex int
-	rasterMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
-		Start: []float64{174}, Velocity: []float64{-1.5},
-		Lower: &motion.WrapLimit{Boundary: -974, Restart: 174, Inclusive: true},
-	})
+	rasterBank, err := composite.NewWindowedImageBank(presets.UnionDiskCopierRasterWindows(raster))
 	if err != nil {
 		s.err = err
 		return
 	}
+	s.closers = append(s.closers, rasterBank.Close)
 	cues, err := timeline.NewCueRanges(presets.UnionDiskCopierCueRanges())
 	if err != nil {
 		s.err = err
@@ -80,12 +75,8 @@ func buildDiskCopier(s *Scene) {
 		clearBlack(s.Canvas)
 		stage.Clear()
 		textLayer.Clear()
-		for i, strip := range strips {
-			strip.Clear()
-			s.transform(strip, raster, 0, rasterMotion.At(0)-float64(i*5), 1.3, 1, 0, 0, 0, 1, ebiten.BlendSourceOver)
-			s.draw(s.Canvas, strip, 0, float64(132+i*34))
-		}
-		rasterMotion.Step()
+		rasterBank.Draw(s.Canvas)
+		rasterBank.Step()
 		s.transform(stage, panel, 320, 200, 1, 1, 0, float64(panel.Bounds().Dx())/2, float64(panel.Bounds().Dy())/2, 1, ebiten.BlendSourceOver)
 		if !copying {
 			time := float64(introTick) * .5
