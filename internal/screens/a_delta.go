@@ -44,6 +44,11 @@ func (s *Scene) deltaForce() {
 		s.err = err
 		return
 	}
+	goldMaterial, err := composite.NewRasterOverlay(presets.UnionDeltaGoldMaterial(goldStage))
+	if err != nil {
+		s.err = err
+		return
+	}
 	var voiceChanges [3]modulation.Change[uint8]
 	var ballEnvelopes [3]*modulation.Decay
 	for i := range ballEnvelopes {
@@ -52,7 +57,7 @@ func (s *Scene) deltaForce() {
 	drawWord := func(x float64) {
 		wave.DrawAt(wordMerge, word, 0, 320)
 		wave.Advance()
-		s.transform(wordMerge, goldStage, 0, 0, 1, 1, 0, 0, 0, 1, ebiten.BlendSourceAtop)
+		goldMaterial.Draw(wordMerge)
 		s.draw(s.Canvas, wordMerge, 64+x, 28)
 		vector.FillRect(s.Canvas, 0, 0, 64, 536, color.Black, false)
 	}
@@ -86,7 +91,7 @@ func (s *Scene) deltaForce() {
 			ring.DrawAt(scroll, 0, 0)
 			wave.DrawAt(merge, scroll, 0, 320)
 			wave.Advance()
-			s.transform(merge, goldStage, 0, 0, 1, 1, 0, 0, 0, 1, ebiten.BlendSourceAtop)
+			goldMaterial.Draw(merge)
 			s.draw(s.Canvas, merge, 64, 28)
 		}
 	}

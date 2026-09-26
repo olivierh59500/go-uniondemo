@@ -85,7 +85,8 @@ The Delta Force balls read synchronized YM voice registers from the active strea
 Their frame envelopes already use DCK's `modulation.Change` and `Decay`;
 `motion.BounceToggle` now owns the alternating logo scale and `WrapBank` the
 gold backdrop offset. `motion.EnterHoldExit` selects each title draw and the
-same-tick handoff to the main scroll.
+same-tick handoff to the main scroll. Both text surfaces reuse a single
+`RasterOverlay` source-atop gold material.
 The credits loader now uses DCK's `timeline.CueClock` for its exact recorded
 duration and reveal clock. Seven captures around its end boundary match the
 previous loader pixel for pixel.
