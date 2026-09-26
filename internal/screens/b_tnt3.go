@@ -1,14 +1,12 @@
 package screens
 
 import (
-	"image"
-	"image/color"
 	"math"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/effects"
 	"github.com/olivierh59500/democonstructionkit/geometry"
 	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
 
 func init() { factories["tnt3"] = buildTNT3 }
@@ -64,9 +62,12 @@ func buildTNT3(s *Scene) {
 		return
 	}
 	s.closers = append(s.closers, carousel.Close)
+	caption, err := scrolling.NewCaptionCarousel(presets.UnionTNTCaption(unionTNTText, font))
+	if err != nil {
+		s.err = err
+		return
+	}
 	pending, held := 1, false
-	textIndex, textWait := 0, 200
-	textY, textIncrement := -18.0, 2.0
 	s.input = func(in Input) {
 		pressed := in.Action || in.Left || in.Right
 		selection := false
@@ -96,29 +97,8 @@ func buildTNT3(s *Scene) {
 			return
 		}
 		carousel.Draw(stage)
-		stage.SubImage(image.Rect(0, 0, 640, 18)).(*ebiten.Image).Fill(color.Black)
-		line := unionTNTText[textIndex]
-		font.Print(stage, line, 320-float64(len(line)*8), textY, 1, 1)
-		if textWait == 100 {
-			textY += textIncrement
-		}
-		if textY >= 0 {
-			textY = 0
-			textWait--
-			if textWait <= 0 {
-				textIncrement = -2
-				textWait = 100
-			}
-		}
-		if textY <= -18 {
-			textY = -18
-			textWait--
-			if textWait <= 0 {
-				textIncrement = 2
-				textWait = 100
-				textIndex = (textIndex + 1) % len(unionTNTText)
-			}
-		}
+		caption.Draw(stage)
+		caption.Step()
 		s.draw(s.Canvas, stage, 64, 68)
 	}
 }
