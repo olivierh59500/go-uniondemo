@@ -78,6 +78,11 @@ TNT Crew 3 screen now uses `effects.SolidMeshCarousel` for its five selectable
 objects, grouped face materials, rotation and recessional handoffs, and
 `scrolling.CaptionCarousel` for its heading. Its model coordinates and message
 text remain local scene data.
+Its faceted ball now uses `effects.SolidSphereModel`; radius, latitude and
+longitude divisions, checker colors and the polar closing band are editable.
+The other four models keep their authored vertices and groups. A pure parity
+check matched all 512 ball vertices and 112 colored faces, and complete GPU
+captures at frames 1, 60, 240 and 600 remain pixel-identical.
 Hidden screen now draws its four pointers through `sprites.DelayedTrail` with
 editable per-image delays and order. `timeline.PacedIndex` keeps the bar and
 crosshair colors one step apart; the palette and masks remain authored art.

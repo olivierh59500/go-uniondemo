@@ -4,29 +4,33 @@ import (
 	"math"
 	"testing"
 
+	"github.com/olivierh59500/democonstructionkit/effects"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 	"github.com/olivierh59500/democonstructionkit/timeline"
 )
 
 func TestUnionSolidObjects(t *testing.T) {
-	objects := unionTNTObjects()
+	objects, err := unionTNTObjects()
+	if err != nil {
+		t.Fatal(err)
+	}
 	wantPoints := []int{28, 48, 512, 7, 29}
 	wantFaces := []int{45, 40, 112, 10, 20}
 	if len(objects) != 5 {
 		t.Fatalf("objects = %d, want 5", len(objects))
 	}
 	for i, object := range objects {
-		if len(object.points) != wantPoints[i] {
-			t.Errorf("object %d: points = %d, want %d", i, len(object.points), wantPoints[i])
+		if len(object.Points) != wantPoints[i] {
+			t.Errorf("object %d: points = %d, want %d", i, len(object.Points), wantPoints[i])
 		}
 		faceCount := 0
-		for _, group := range object.groups {
+		for _, group := range object.Groups {
 			faceCount += len(group)
-			mesh := unionSolidMesh(object.points, group)
+			mesh := effects.SolidMesh(object.Points, group)
 			for _, triangle := range mesh.Triangles {
 				for _, index := range triangle.Indices {
-					if index < 0 || index >= len(object.points) {
+					if index < 0 || index >= len(object.Points) {
 						t.Errorf("object %d: invalid vertex index %d", i, index)
 					}
 				}
@@ -38,7 +42,7 @@ func TestUnionSolidObjects(t *testing.T) {
 		if faceCount != wantFaces[i] {
 			t.Errorf("object %d: faces = %d, want %d", i, faceCount, wantFaces[i])
 		}
-		for _, p := range object.points {
+		for _, p := range object.Points {
 			if math.IsNaN(p.X+p.Y+p.Z) || math.IsInf(p.X+p.Y+p.Z, 0) {
 				t.Errorf("object %d: nonfinite vertex", i)
 			}

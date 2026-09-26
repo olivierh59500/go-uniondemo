@@ -1,10 +1,7 @@
 package screens
 
 import (
-	"math"
-
 	"github.com/olivierh59500/democonstructionkit/effects"
-	"github.com/olivierh59500/democonstructionkit/geometry"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 )
@@ -16,15 +13,6 @@ type unionSolidFace struct {
 	color   uint32
 }
 
-type unionSolidObject struct {
-	points []geometry.Vec3
-	groups [][]unionSolidFace
-}
-
-func unionSolidMesh(points []geometry.Vec3, faces []unionSolidFace) effects.Mesh {
-	return effects.SolidMesh(points, unionFaces(faces))
-}
-
 func unionFaces(faces []unionSolidFace) []effects.SolidFace {
 	converted := make([]effects.SolidFace, len(faces))
 	for i, face := range faces {
@@ -33,28 +21,31 @@ func unionFaces(faces []unionSolidFace) []effects.SolidFace {
 	return converted
 }
 
-func unionTNTObjects() []unionSolidObject {
-	spherePoints, sphereFaces := unionTNTSphere()
-	return []unionSolidObject{
-		{points: unionUnionPoints, groups: [][]unionSolidFace{unionUnionFaces}},
-		{points: unionTntPoints, groups: [][]unionSolidFace{unionTntFaces}},
-		{points: spherePoints, groups: [][]unionSolidFace{sphereFaces}},
-		{points: unionGliderPoints, groups: [][]unionSolidFace{unionGliderBaseFaces, unionGliderTopFaces}},
-		{points: unionCarrierPoints, groups: [][]unionSolidFace{unionCarrierBottomFaces, unionCarrierPlaneFaces, unionCarrierTopFaces}},
+func unionTNTObjects() ([]effects.SolidMeshModel, error) {
+	sphere, err := effects.SolidSphereModel(effects.SolidSphereConfig{
+		Radius: 80, Rows: 8, Columns: 16, PoleBand: true,
+		BodyColors: [2]uint32{0xffffff, 0xff0000},
+		PoleColors: [2]uint32{0x00ff00, 0x0000ff},
+	})
+	if err != nil {
+		return nil, err
 	}
+	return []effects.SolidMeshModel{
+		{Points: unionUnionPoints, Groups: [][]effects.SolidFace{unionFaces(unionUnionFaces)}},
+		{Points: unionTntPoints, Groups: [][]effects.SolidFace{unionFaces(unionTntFaces)}},
+		sphere,
+		{Points: unionGliderPoints, Groups: [][]effects.SolidFace{unionFaces(unionGliderBaseFaces), unionFaces(unionGliderTopFaces)}},
+		{Points: unionCarrierPoints, Groups: [][]effects.SolidFace{unionFaces(unionCarrierBottomFaces), unionFaces(unionCarrierPlaneFaces), unionFaces(unionCarrierTopFaces)}},
+	}, nil
 }
 
 func buildTNT3(s *Scene) {
 	stage, stars := s.surface(640, 400), s.image("stars.png")
 	font := s.bitmap(s.image("fonts.png"), "union-tnt3")
-	objects := unionTNTObjects()
-	models := make([]effects.SolidMeshModel, len(objects))
-	for i, object := range objects {
-		models[i].Points = object.points
-		models[i].Groups = make([][]effects.SolidFace, len(object.groups))
-		for j, group := range object.groups {
-			models[i].Groups[j] = unionFaces(group)
-		}
+	models, err := unionTNTObjects()
+	if err != nil {
+		s.err = err
+		return
 	}
 	carousel, err := effects.NewSolidMeshCarousel(presets.UnionTNTMeshCarousel(models))
 	if err != nil {
@@ -101,47 +92,6 @@ func buildTNT3(s *Scene) {
 		caption.Draw(stage)
 		s.draw(s.Canvas, stage, 64, 68)
 	}
-}
-
-func unionTNTSphere() ([]geometry.Vec3, []unionSolidFace) {
-	points := make([]geometry.Vec3, 0, 512)
-	faces := make([]unionSolidFace, 0, 112)
-	point := func(theta, phi float64) geometry.Vec3 {
-		theta *= math.Pi / 180
-		phi *= math.Pi / 180
-		return geometry.Vec3{X: 80 * math.Cos(theta) * math.Cos(phi), Y: 80 * math.Cos(theta) * math.Sin(phi), Z: -80 * math.Sin(theta)}
-	}
-	for row := 0; row < 8; row++ {
-		theta := -90 + float64(row)*22.5
-		for column := 0; column < 16; column++ {
-			phi := float64(column) * 22.5
-			start := len(points)
-			a, b, c, d := point(theta, phi), point(theta+22.5, phi), point(theta+22.5, phi+22.5), point(theta, phi+22.5)
-			if row == 0 {
-				d = c
-			}
-			points = append(points, a, b, c, d)
-			shade := uint32(0xffffff)
-			if (column+row)%2 != 0 {
-				shade = 0xff0000
-			}
-			if row > 0 && row < 7 {
-				faces = append(faces, unionSolidFace{[4]int{start, start + 1, start + 2, start + 3}, shade})
-			}
-		}
-	}
-	for i := 0; i < 16; i++ {
-		a, b, c, d := i*4+1, i*4+2, 452+i*4, 448+i*4
-		if i == 15 {
-			b, c, d = 1, 448, 508
-		}
-		shade := uint32(0x00ff00)
-		if i%2 != 0 {
-			shade = 0x0000ff
-		}
-		faces = append(faces, unionSolidFace{[4]int{a, b, c, d}, shade})
-	}
-	return points, faces
 }
 
 var unionTNTText = []string{
