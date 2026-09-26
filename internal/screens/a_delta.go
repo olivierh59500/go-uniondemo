@@ -39,18 +39,21 @@ func (s *Scene) deltaForce() {
 		s.err = err
 		return
 	}
-	wordMode, wordWait := 0, 200
-	wordX, wordDX := -640.0, 6.0
+	wordMotion, err := motion.NewEnterHoldExit(presets.UnionDeltaWordSlide())
+	if err != nil {
+		s.err = err
+		return
+	}
 	var voiceChanges [3]modulation.Change[uint8]
 	var ballEnvelopes [3]*modulation.Decay
 	for i := range ballEnvelopes {
 		ballEnvelopes[i], _ = modulation.NewDecay(modulation.DecayConfig{Peak: 7, Rate: 1})
 	}
-	drawWord := func() {
+	drawWord := func(x float64) {
 		wave.DrawAt(wordMerge, word, 0, 320)
 		wave.Advance()
 		s.transform(wordMerge, goldStage, 0, 0, 1, 1, 0, 0, 0, 1, ebiten.BlendSourceAtop)
-		s.draw(s.Canvas, wordMerge, 64+wordX, 28)
+		s.draw(s.Canvas, wordMerge, 64+x, 28)
 		vector.FillRect(s.Canvas, 0, 0, 64, 536, color.Black, false)
 	}
 	s.render = func() {
@@ -74,28 +77,11 @@ func (s *Scene) deltaForce() {
 		s.draw(goldStage, gold, 0, 236-goldClock.At(0))
 		s.draw(goldStage, gold, 0, 354-goldClock.At(0))
 		goldClock.Step()
-		if wordMode == 0 {
-			wordX += wordDX
-			if wordX >= 32 {
-				wordDX, wordMode = -6, 1
+		for _, event := range wordMotion.Step() {
+			if event.Kind == motion.SlideContent {
+				drawWord(event.X)
+				continue
 			}
-			drawWord()
-		}
-		if wordMode == 1 {
-			wordWait--
-			if wordWait <= 0 {
-				wordMode = 2
-			}
-			drawWord()
-		}
-		if wordMode == 2 {
-			wordX += wordDX
-			if wordX <= -640 {
-				wordDX, wordMode = 0, 3
-			}
-			drawWord()
-		}
-		if wordMode == 3 {
 			ring.Step()
 			ring.DrawAt(scroll, 0, 0)
 			wave.DrawAt(merge, scroll, 0, 320)

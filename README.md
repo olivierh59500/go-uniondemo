@@ -84,7 +84,8 @@ crosshair colors one step apart; the palette and masks remain authored art.
 The Delta Force balls read synchronized YM voice registers from the active stream.
 Their frame envelopes already use DCK's `modulation.Change` and `Decay`;
 `motion.BounceToggle` now owns the alternating logo scale and `WrapBank` the
-gold backdrop offset.
+gold backdrop offset. `motion.EnterHoldExit` selects each title draw and the
+same-tick handoff to the main scroll.
 The credits loader now uses DCK's `timeline.CueClock` for its exact recorded
 duration and reveal clock. Seven captures around its end boundary match the
 previous loader pixel for pixel.
