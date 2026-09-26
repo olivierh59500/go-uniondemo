@@ -169,18 +169,12 @@ func buildLevel16(s *Scene) {
 		return
 	}
 	s.closers = append(s.closers, vertical.Close)
-	waterMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
-		Start: []float64{0}, Velocity: []float64{2},
-		Upper: &motion.WrapLimit{Boundary: 220, Restart: 0, Inclusive: true},
-	})
+	waterLayer, err := composite.NewRasterOverlay(presets.UnionLevel16Water(water))
 	if err != nil {
 		s.err = err
 		return
 	}
-	rasterMotion, err := motion.NewWrapBank(motion.WrapBankConfig{
-		Start: []float64{120}, Velocity: []float64{-2},
-		Lower: &motion.WrapLimit{Boundary: -25, Restart: 120, Inclusive: true},
-	})
+	rasterLayer, err := composite.NewRasterOverlay(presets.UnionLevel16Raster(raster))
 	if err != nil {
 		s.err = err
 		return
@@ -191,10 +185,10 @@ func buildLevel16(s *Scene) {
 		clearBlack(s.Canvas)
 		s.err = vertical.Update(kit.Frame{Tick: s.Frame})
 		vertical.Draw(s.Canvas)
-		s.draw(s.Canvas, water, 20, waterMotion.At(0))
-		waterMotion.Step()
-		s.draw(s.Canvas, raster, 300, rasterMotion.At(0))
-		rasterMotion.Step()
+		waterLayer.Draw(s.Canvas)
+		waterLayer.Step()
+		rasterLayer.Draw(s.Canvas)
+		rasterLayer.Step()
 		s.draw(s.Canvas, back, 0, 0)
 		phase += .008
 		position := orbit.At(phase)
