@@ -44,7 +44,12 @@ func buildTNT2(s *Scene) {
 		s.err = err
 		return
 	}
-	scrollX, scrollSpeed := -640.0, 4.0
+	scrollClock, err := motion.NewWrapBank(presets.UnionTNT2TextWrap(textView.Width()))
+	if err != nil {
+		s.err = err
+		return
+	}
+	scrollSpeed := 4.0
 	direction, held := -1.0, false
 	s.input = func(in Input) {
 		if in.Left {
@@ -79,6 +84,9 @@ func buildTNT2(s *Scene) {
 		if in.Down {
 			scrollSpeed = math.Max(0, scrollSpeed-.05)
 		}
+		if err := scrollClock.SetVelocity(0, -scrollSpeed); err != nil {
+			s.err = err
+		}
 	}
 	s.render = func() {
 		clearBlack(s.Canvas)
@@ -88,14 +96,11 @@ func buildTNT2(s *Scene) {
 		for i, layer := range layers {
 			backgrounds.DrawAt(stage, layer, parallax.At(i), 0)
 		}
-		if err := textView.DrawWindow(stage, scrollX, 180, 640); err != nil {
+		if err := textView.DrawWindow(stage, scrollClock.At(0), 180, 640); err != nil {
 			s.err = err
 			return
 		}
-		scrollX -= scrollSpeed
-		if scrollX < -(textView.Width() - 640) {
-			scrollX = -640
-		}
+		scrollClock.Step()
 		s.draw(stage, front, 0, 0)
 		s.draw(s.Canvas, stage, 64, 60)
 	}

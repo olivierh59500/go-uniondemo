@@ -9,6 +9,7 @@ import (
 	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 	"github.com/olivierh59500/democonstructionkit/sprites"
 )
@@ -85,7 +86,12 @@ func (s *Scene) replicants() {
 		s.err = err
 		return
 	}
-	scrollX, scrollSpeed := -640.0, 6.0
+	scrollClock, err := motion.NewWrapBank(presets.UnionReplicantsTextWrap(float64(len(text) * 64)))
+	if err != nil {
+		s.err = err
+		return
+	}
+	scrollSpeed := 6.0
 	previous := Input{}
 	s.input = func(in Input) {
 		if in.Right && !previous.Right {
@@ -93,6 +99,9 @@ func (s *Scene) replicants() {
 		}
 		if in.Left && !previous.Left {
 			scrollSpeed = math.Max(scrollSpeed-1, 0)
+		}
+		if err := scrollClock.SetVelocity(0, -scrollSpeed); err != nil {
+			s.err = err
 		}
 		previous = in
 	}
@@ -104,16 +113,13 @@ func (s *Scene) replicants() {
 		vector.FillRect(stage, 0, 0, 640, 80, gold, false)
 		vector.FillRect(stage, 0, 326, 640, 76, gold, false)
 		state := scrolling.IdentityState()
-		state.X, state.Y = scrollX, 14
-		state.First = max(0, int(-scrollX/64)-1)
+		state.X, state.Y = scrollClock.At(0), 14
+		state.First = max(0, int(-state.X/64)-1)
 		state.End = min(len(text), state.First+13)
 		top.DrawAt(stage, state)
 		state.Y = 326
 		bottom.DrawAt(stage, state)
-		scrollX -= scrollSpeed
-		if scrollX < -float64(len(text)*64-640) {
-			scrollX = -640
-		}
+		scrollClock.Step()
 		s.draw(stage, main, 0, 0)
 		if err := topRasters.Update(kit.Frame{}); err != nil {
 			s.err = err
