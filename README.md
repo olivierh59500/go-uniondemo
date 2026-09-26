@@ -74,7 +74,10 @@ in Go.
 
 Reusable composition, scrolling, raster deformation, sprite and mesh effects
 come from DCK. Each font supplies its own atlas dimensions and ordering. The
-Delta Force balls read synchronized YM voice registers from the active stream.
+Hidden screen now draws its four pointers through `sprites.DelayedTrail` with
+editable per-image delays and order. `timeline.PacedIndex` keeps the bar and
+crosshair colors one step apart; the palette and masks remain authored art.
+The Delta Force balls read synchronized YM voice registers from the active stream.
 The credits loader now uses DCK's `timeline.CueClock` for its exact recorded
 duration and reveal clock. Seven captures around its end boundary match the
 previous loader pixel for pixel.

@@ -6,8 +6,11 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/geometry"
-	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/sprites"
+	"github.com/olivierh59500/democonstructionkit/timeline"
 )
 
 func init() { factories["hidden"] = (*Scene).hiddenScreen }
@@ -33,14 +36,19 @@ func (s *Scene) hiddenScreen() {
 	if s.err != nil {
 		return
 	}
-	position := geometry.Vec2{X: 384, Y: 268}
-	history, err := motion.NewPointHistory(61, position)
+	trailConfig := presets.UnionHiddenTrail(pointers[:])
+	position := trailConfig.Initial
+	trail, err := sprites.NewDelayedTrail(trailConfig)
 	if err != nil {
 		s.err = err
 		return
 	}
 	palette := aHiddenPalette()
-	whichColor := 0
+	paletteClock, err := timeline.NewPacedIndex(presets.UnionHiddenPalette(len(palette)))
+	if err != nil {
+		s.err = err
+		return
+	}
 	s.input = func(in Input) {
 		if in.PointerDown || in.PointerX != 0 || in.PointerY != 0 {
 			position = geometry.Vec2{X: in.PointerX, Y: in.PointerY}
@@ -48,16 +56,20 @@ func (s *Scene) hiddenScreen() {
 	}
 	s.render = func() {
 		clearBlack(s.Canvas)
-		history.Push(position)
-		vector.FillRect(s.Canvas, 388, 152, 310, 32, palette[whichColor], false)
-		whichColor = (whichColor + 1) % len(palette)
-		s.draw(s.Canvas, main, 64, 68)
-		for i := 3; i >= 0; i-- {
-			p, _ := history.At(i * 20)
-			s.draw(s.Canvas, pointers[i], p.X, p.Y)
+		if err := trail.SetPosition(position); err != nil {
+			s.err = err
+			return
 		}
-		vector.FillRect(s.Canvas, float32(position.X), float32(position.Y), 4, 2, palette[whichColor], false)
-		vector.FillRect(s.Canvas, float32(position.X), float32(position.Y), 2, 4, palette[whichColor], false)
+		if err := trail.Update(kit.Frame{}); err != nil {
+			s.err = err
+			return
+		}
+		vector.FillRect(s.Canvas, 388, 152, 310, 32, palette[paletteClock.Current()], false)
+		paletteClock.Step()
+		s.draw(s.Canvas, main, 64, 68)
+		trail.Draw(s.Canvas)
+		vector.FillRect(s.Canvas, float32(position.X), float32(position.Y), 4, 2, palette[paletteClock.Current()], false)
+		vector.FillRect(s.Canvas, float32(position.X), float32(position.Y), 2, 4, palette[paletteClock.Current()], false)
 		vector.FillRect(s.Canvas, 0, 0, 768, 68, color.Black, false)
 		vector.FillRect(s.Canvas, 0, 468, 768, 68, color.Black, false)
 		vector.FillRect(s.Canvas, 0, 0, 64, 536, color.Black, false)

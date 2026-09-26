@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.9.11
-	github.com/olivierh59500/democonstructionkit v0.0.0-20260925212726-5ca8d3a162d9
+	github.com/olivierh59500/democonstructionkit v0.0.0-20260926034422-7e435fd6bdc2
 )
 
 require (
