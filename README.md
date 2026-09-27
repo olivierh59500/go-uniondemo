@@ -87,7 +87,14 @@ Hidden screen now draws its four pointers through `sprites.DelayedTrail` with
 editable per-image delays and order. `timeline.PacedIndex` keeps the bar and
 crosshair colors one step apart; the palette and masks remain authored art.
 The Delta Force balls read synchronized YM voice registers from the active stream.
-Their frame envelopes already use DCK's `modulation.Change` and `Decay`;
+Their complete sprite bank now uses DCK's `sprites.SignalFrameBank`: channel
+changes, independent decay envelopes, eight atlas frames and the three
+positions are configured together. Eight music-driven captures through frame
+600 match the previous screen byte for byte. The host only passes its current
+YM levels; the same component can accept other module or PCM signals.
+On Pixel 10a, Delta Force showed 744 distinct present intervals with p95
+16.720 ms, maximum 17.699 ms and none over 20 ms in twelve sampled windows.
+The other Delta effects retain their shared controllers:
 `motion.BounceToggle` now owns the alternating logo scale and `WrapBank` the
 gold backdrop offset. `motion.EnterHoldExit` selects each title draw and the
 same-tick handoff to the main scroll. Both text surfaces reuse a single

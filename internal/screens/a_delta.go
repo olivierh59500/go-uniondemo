@@ -6,9 +6,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/olivierh59500/democonstructionkit/composite"
-	"github.com/olivierh59500/democonstructionkit/modulation"
 	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/presets"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 )
 
 func init() { factories["delta"] = (*Scene).deltaForce }
@@ -49,11 +49,17 @@ func (s *Scene) deltaForce() {
 		s.err = err
 		return
 	}
-	var voiceChanges [3]modulation.Change[uint8]
-	var ballEnvelopes [3]*modulation.Decay
-	for i := range ballEnvelopes {
-		ballEnvelopes[i], _ = modulation.NewDecay(modulation.DecayConfig{Peak: 7, Rate: 1})
+	ballConfig, err := presets.UnionDeltaVoiceBalls(balls)
+	if err != nil {
+		s.err = err
+		return
 	}
+	ballBank, err := sprites.NewSignalFrameBank(ballConfig)
+	if err != nil {
+		s.err = err
+		return
+	}
+	s.closers = append(s.closers, ballBank.Close)
 	drawWord := func(x float64) {
 		wave.DrawAt(wordMerge, word, 0, 320)
 		wave.Advance()
@@ -74,11 +80,11 @@ func (s *Scene) deltaForce() {
 		s.part(logoStage, logos, composite.Region{X: float64(tile % columns * 640), Y: float64(tile / columns * 130), Width: 640, Height: 130}, 0, 0, 1, 1)
 		s.transform(s.Canvas, logoStage, 384, 64, 1, logoPose.Value, 0, 320, 65, 1, ebiten.BlendSourceOver)
 		logoClock.Step()
-		for i, volume := range s.VoiceVolumes {
-			frame := int(ballEnvelopes[i].Step(voiceChanges[i].Sample(volume), 1))
-			x := [3]float64{244, 355, 464}[i]
-			s.part(s.Canvas, balls, composite.Region{X: float64(frame * 96), Width: 96, Height: 114}, x, 177, 1, 1)
+		if err := ballBank.StepYM(s.VoiceVolumes[:]); err != nil {
+			s.err = err
+			return
 		}
+		ballBank.Draw(s.Canvas)
 		s.draw(goldStage, gold, 0, 236-goldClock.At(0))
 		s.draw(goldStage, gold, 0, 354-goldClock.At(0))
 		goldClock.Step()
