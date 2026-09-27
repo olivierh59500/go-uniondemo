@@ -71,3 +71,28 @@ func TestSavePNGPreservesNativePixels(t *testing.T) {
 		t.Fatalf("native pixel changed: %v", got)
 	}
 }
+
+func TestCaptureTargets(t *testing.T) {
+	for _, tc := range []struct {
+		list string
+		want []int
+	}{
+		{"", []int{180}},
+		{"0, 12, 600", []int{0, 12, 600}},
+	} {
+		got, err := captureTargets(180, tc.list)
+		if err != nil || len(got) != len(tc.want) {
+			t.Fatalf("captureTargets(%q) = %v, %v", tc.list, got, err)
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Fatalf("captureTargets(%q) = %v, want %v", tc.list, got, tc.want)
+			}
+		}
+	}
+	for _, invalid := range []string{",", "2,2", "3,2", "-1", "one"} {
+		if _, err := captureTargets(180, invalid); err == nil {
+			t.Fatalf("accepted invalid frame list %q", invalid)
+		}
+	}
+}

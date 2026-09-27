@@ -161,6 +161,11 @@ phase in all color channels. `effects.MultiPlaneScene` now composes this
 screen in native-stage mode while Union retains its own assets and music.
 Its projected text now uses `scrolling.New` with Union's own projection bias.
 Nine captures through frame 8,000 remain pixel-identical, including late forms.
+The Replicants letters use DCK's keyframed `motion.CuedFormation`: measured
+origin and signed spacing preserve the opening left/right stacks and their
+reversed reading order. Later keys bend the phrase into arches and diagonal
+rows, then alternate normal and reversed lines. The same formation API works
+with any sprite set; only these pose values belong to this screen.
 
 ## Validation and frame captures
 
@@ -170,12 +175,15 @@ go vet ./...
 go run ./cmd/capture -screen menu -frames 180 -output /tmp/union-menu.png
 go run ./cmd/capture -screen delta -frames 600 -output /tmp/union-delta.png
 go run ./cmd/capture -screen tnt3 -number 3 -frames 240 -output /tmp/union-sphere.png
+go run ./cmd/capture -screen replicants -frames-list 0,60,120,480,1200 -output /tmp/union-replicants-frames
 ```
 
 Graphics checks require a native display. The capture command renders at native
 resolution without opening an audio device, advancing music-driven animation
 with the YM synthesizer. Its frame count is the number of updates after the
 initial screen image. `-pointer-motion` exercises the hidden screen's trails.
+`-frames-list` captures several update counts in one run and writes numbered
+PNG files into the output directory.
 
 ## Complete video recording
 
@@ -240,6 +248,12 @@ loading-card handoff into Wow twice, Hidden or Disk Copier; none was observed
 inside an already running screen. Thermal status stayed 0. Three later memory
 snapshots ranged from 450,355 to 458,699 KiB process PSS and 187,616 to
 198,152 KiB graphics memory; these are neither peak nor battery measurements.
+
+After the Replicants path update, a direct Pixel 10a run captured 45 sparse
+samples and 1,949 distinct presentation intervals over 32.55 seconds of frame
+history. Its p95 was 16.740 ms, with one interval above 20 ms (31.988 ms).
+The thermal status remained 0. This check covered an already running screen,
+not its loader transition.
 
 ## Credits
 

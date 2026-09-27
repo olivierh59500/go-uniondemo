@@ -13,6 +13,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -24,9 +25,9 @@ import (
 )
 
 type options struct {
-	screen, output, door  string
-	frames, rate, number  int
-	pointerMotion, action bool
+	screen, output, door, frameList string
+	frames, rate, number            int
+	pointerMotion, action           bool
 }
 
 func (o options) validate() error {
@@ -38,6 +39,9 @@ func (o options) validate() error {
 	}
 	if o.output == "" {
 		return fmt.Errorf("output path must not be empty")
+	}
+	if _, err := captureTargets(o.frames, o.frameList); err != nil {
+		return err
 	}
 	if o.number < 0 || o.number > 10 {
 		return fmt.Errorf("number must be between 0 and 10")
@@ -55,12 +59,33 @@ func (o options) validate() error {
 	return nil
 }
 
+func captureTargets(single int, list string) ([]int, error) {
+	if list == "" {
+		return []int{single}, nil
+	}
+	parts := strings.Split(list, ",")
+	if len(parts) > 4096 {
+		return nil, fmt.Errorf("too many capture frames")
+	}
+	targets := make([]int, 0, len(parts))
+	for _, part := range parts {
+		frame, err := strconv.Atoi(strings.TrimSpace(part))
+		if err != nil || frame < 0 || len(targets) > 0 && frame <= targets[len(targets)-1] {
+			return nil, fmt.Errorf("capture frames must be nonnegative and strictly increasing")
+		}
+		targets = append(targets, frame)
+	}
+	return targets, nil
+}
+
 type captureGame struct {
 	options              options
 	width, height, frame int
 	step                 func(int) error
 	draw                 func(*ebiten.Image)
 	close                func() error
+	targets              []int
+	nextCapture          int
 	captured             bool
 	err                  error
 }
@@ -70,6 +95,8 @@ func newCapture(o options) (*captureGame, error) {
 		return nil, err
 	}
 	g := &captureGame{options: o, width: menu.Width, height: menu.Height}
+	g.targets, _ = captureTargets(o.frames, o.frameList)
+	g.options.frames = g.targets[len(g.targets)-1]
 	switch {
 	case o.screen == "menu":
 		scene, err := menu.New(assets.Files)
@@ -150,11 +177,16 @@ func (g *captureGame) Update() error {
 
 func (g *captureGame) Draw(dst *ebiten.Image) {
 	g.draw(dst)
-	if !g.captured && g.frame == g.options.frames {
+	if !g.captured && g.frame == g.targets[g.nextCapture] {
 		pixels := image.NewRGBA(image.Rect(0, 0, g.width, g.height))
 		dst.ReadPixels(pixels.Pix)
-		g.err = savePNG(g.options.output, pixels)
-		g.captured = true
+		path := g.options.output
+		if g.options.frameList != "" {
+			path = filepath.Join(path, fmt.Sprintf("%d.png", g.frame))
+		}
+		g.err = savePNG(path, pixels)
+		g.nextCapture++
+		g.captured = g.err != nil || g.nextCapture == len(g.targets)
 	}
 }
 
@@ -206,6 +238,7 @@ func main() {
 	flag.StringVar(&o.screen, "screen", "menu", "menu, loader:<screen>, or a screen identifier")
 	flag.IntVar(&o.frames, "frames", 180, "exact number of updates before capture")
 	flag.StringVar(&o.output, "output", "capture.png", "output PNG path")
+	flag.StringVar(&o.frameList, "frames-list", "", "comma-separated update counts; output becomes a directory of numbered PNG files")
 	flag.IntVar(&o.rate, "rate", 60, "animation and music ticks per second (50 or 60)")
 	flag.StringVar(&o.door, "door", "", "place the menu character at this door")
 	flag.BoolVar(&o.pointerMotion, "pointer-motion", false, "move the pointer along a deterministic curve")
