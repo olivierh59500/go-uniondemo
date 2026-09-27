@@ -252,6 +252,15 @@ loading-card handoff into Wow twice, Hidden or Disk Copier; none was observed
 inside an already running screen. Thermal status stayed 0. Three later memory
 snapshots ranged from 450,355 to 458,699 KiB process PSS and 187,616 to
 198,152 KiB graphics memory; these are neither peak nor battery measurements.
+A longer Pixel 10a route stayed one minute on each of the eleven screens,
+completed the hall cycle and began a second pass. PixelProbe collected 500
+sparse windows over 1,108.04 seconds: 31,000 distinct intervals covering
+517.61 seconds of frame history, p95 16.735 ms. Six intervals exceeded 20 ms
+(maximum 133.623 ms). Forty memory snapshots reached at most 419,572 KiB
+process PSS and 190,832 KiB graphics memory; these are sampled maxima rather
+than peaks. Thermal status stayed 0 and the coarse battery level remained at
+80%, which does not establish energy use. The repeated tour was stopped after
+the measurement and the ordinary application was relaunched.
 
 After the Replicants path update, a direct Pixel 10a run captured 45 sparse
 samples and 1,949 distinct presentation intervals over 32.55 seconds of frame
