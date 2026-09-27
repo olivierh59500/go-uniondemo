@@ -166,6 +166,11 @@ func (g *captureGame) Update() error {
 	if g.captured {
 		return ebiten.Termination
 	}
+	// A multi-frame capture may request the untouched initial image. Wait for
+	// Draw to save frame zero before advancing the scene to its first update.
+	if g.frame == 0 && g.nextCapture == 0 && len(g.targets) > 0 && g.targets[0] == 0 {
+		return nil
+	}
 	if g.frame < g.options.frames {
 		if err := g.step(g.frame + 1); err != nil {
 			return err

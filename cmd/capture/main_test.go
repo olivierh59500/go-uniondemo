@@ -96,3 +96,19 @@ func TestCaptureTargets(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiCaptureWaitsForInitialImage(t *testing.T) {
+	calls := 0
+	g := captureGame{
+		options: options{frames: 2}, targets: []int{0, 2},
+		step: func(int) error { calls++; return nil },
+	}
+	if err := g.Update(); err != nil || calls != 0 || g.frame != 0 {
+		t.Fatalf("advanced before initial image: calls=%d frame=%d err=%v", calls, g.frame, err)
+	}
+	// Draw saves target zero and advances the capture cursor.
+	g.nextCapture = 1
+	if err := g.Update(); err != nil || calls != 1 || g.frame != 1 {
+		t.Fatalf("failed to resume after initial image: calls=%d frame=%d err=%v", calls, g.frame, err)
+	}
+}

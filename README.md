@@ -161,11 +161,12 @@ phase in all color channels. `effects.MultiPlaneScene` now composes this
 screen in native-stage mode while Union retains its own assets and music.
 Its projected text now uses `scrolling.New` with Union's own projection bias.
 Nine captures through frame 8,000 remain pixel-identical, including late forms.
-The Replicants letters use DCK's keyframed `motion.CuedFormation`: measured
-origin and signed spacing preserve the opening left/right stacks and their
-reversed reading order. Later keys bend the phrase into arches and diagonal
-rows, then alternate normal and reversed lines. The same formation API works
-with any sprite set; only these pose values belong to this screen.
+The Replicants letters use DCK's `motion.KeyframedFormation`. Their 126 authored
+position banks cover the 25-second cycle: rapid left/right stacks, independent
+letter waves and fast arcs crossing the panels in both directions. DCK
+interpolates and loops the positions without allocating during a frame. The
+screen loads only its artwork data from `assets/replicants/motion.json`; the
+same formation works with any ordered sprite bank.
 
 ## Validation and frame captures
 
@@ -257,6 +258,10 @@ samples and 1,949 distinct presentation intervals over 32.55 seconds of frame
 history. Its p95 was 16.740 ms, with one interval above 20 ms (31.988 ms).
 The thermal status remained 0. This check covered an already running screen,
 not its loader transition.
+After replacing its whole-phrase poses with independent letter tracks, another
+45-sample run covered 1,986 distinct intervals and 33.15 seconds of frame
+history, including a full 25-second motion cycle. The p95 was 16.734 ms, the
+maximum 17.091 ms, and no interval exceeded 20 ms. Thermal status stayed 0.
 
 ## Credits
 
