@@ -17,8 +17,16 @@ func main() {
 	tour := app.DefaultTourOptions()
 	flag.DurationVar(&tour.ScreenDuration, "screen-duration", tour.ScreenDuration, "time on each screen, excluding loading credits and walking")
 	flag.DurationVar(&tour.MenuDuration, "menu-duration", tour.MenuDuration, "pause in the hall before walking to the next door")
+	screen := flag.String("screen", "", "record one screen directly instead of the complete tour; requires -duration")
 	flag.Parse()
-	if err := video.Run(config, func() (ebiten.Game, error) { return app.NewTour(app.Config{Rate: 60}, tour) }); err != nil {
+	if *screen != "" && config.Duration <= 0 {
+		log.Fatal("-screen requires a positive -duration")
+	}
+	factory := func() (ebiten.Game, error) { return app.NewTour(app.Config{Rate: 60}, tour) }
+	if *screen != "" {
+		factory = func() (ebiten.Game, error) { return app.New(app.Config{Rate: 60, Screen: *screen}) }
+	}
+	if err := video.Run(config, factory); err != nil {
 		log.Fatal(err)
 	}
 }

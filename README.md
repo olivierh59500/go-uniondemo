@@ -192,6 +192,7 @@ With FFmpeg installed and a native display available:
 ```sh
 go run ./cmd/video
 go run ./cmd/video -output recordings/union-preview.mp4 -duration 10s
+go run ./cmd/video -screen replicants -duration 12s -output recordings/replicants-clip.mp4
 ```
 
 The default export visits all eleven screens for one minute each, including the
@@ -208,6 +209,8 @@ a PNG poster from the introduction, and a JSON report with chapter timings in
 the locally excluded `recordings/` directory. `-screen-duration`,
 `-menu-duration` and `-poster-at` adjust the presentation; `-duration` limits a
 preview without changing the complete route.
+`-screen` records a named screen directly for a bounded effect clip, with that
+screen's own soundtrack and no menu or loading transition.
 
 ## Android
 
