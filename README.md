@@ -215,6 +215,32 @@ The second command installs the debug build on the authorized connected device.
 Set `ANDROID_SERIAL` when several devices are connected. The application ID is
 `com.olivierh.uniondemo`.
 
+For an unattended Pixel presentation check, launch the same APK with a
+per-screen dwell time in seconds:
+
+```sh
+adb shell am start -S -W -n com.olivierh.uniondemo/.MainActivity \
+  --ei dck_tour_seconds 6
+```
+
+The optional value accepts 1–600 seconds. The complete 38.42-second intro
+plays first; the hall then visits every door with its normal loading card and
+returns to the menu between screens. The route repeats, and logcat records
+each `union_tour screen=...` handoff for timing checks. Launching without the
+extra retains the ordinary touch-controlled presentation.
+
+On Pixel 10a, a six-second-per-screen route visited the introduction, all
+eleven doors and every loading return, then started another cycle. Two sparse
+105-sample presentation traces each spanned about 232 seconds and contained
+6,510 distinct intervals, covering about 109 seconds of actual frame history.
+Their p95 intervals were 16.731 and 16.738 ms. The first had six intervals
+above 20 ms (maximum 267.077 ms); the timestamped second had four (maximum
+133.552 ms). All four timestamped pauses occurred within about 60 ms of a
+loading-card handoff into Wow twice, Hidden or Disk Copier; none was observed
+inside an already running screen. Thermal status stayed 0. Three later memory
+snapshots ranged from 450,355 to 458,699 KiB process PSS and 187,616 to
+198,152 KiB graphics memory; these are neither peak nor battery measurements.
+
 ## Credits
 
 The Union's original artists, programmers and musicians retain credit for their

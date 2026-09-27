@@ -301,6 +301,19 @@ func (g *Game) ScreenID() string {
 	return g.current
 }
 func (g *Game) Rate() int { return g.config.Rate }
+
+// SetTour enables the normal hall route with a bounded dwell time per screen.
+// Mobile hosts call it on the Ebitengine update thread before the first frame.
+func (g *Game) SetTour(screenSeconds int) error {
+	if g.closed || screenSeconds < 1 || screenSeconds > 600 {
+		return fmt.Errorf("union: invalid tour screen duration")
+	}
+	g.config.Tour = true
+	g.config.ScreenSeconds = screenSeconds
+	g.tourIndex = 0
+	return nil
+}
+
 func (g *Game) Position() time.Duration {
 	return time.Duration(g.ticks) * time.Second / time.Duration(g.config.Rate)
 }

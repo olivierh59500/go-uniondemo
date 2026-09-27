@@ -3,12 +3,14 @@ package com.olivierh.uniondemo;
 import android.app.Activity;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 
 import com.olivierh.uniondemo.mobile.EbitenView;
+import com.olivierh.uniondemo.mobile.Mobile;
 
 import go.Seq;
 
@@ -20,6 +22,10 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         Seq.setContext(getApplicationContext());
+        int tourSeconds = getIntent().getIntExtra("dck_tour_seconds", 0);
+        if (tourSeconds > 0 && !Mobile.configureTour(tourSeconds)) {
+            Log.w("UnionDemo", "Ignoring invalid tour duration");
+        }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             WindowManager.LayoutParams attributes = getWindow().getAttributes();
