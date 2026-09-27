@@ -2,13 +2,26 @@ package app
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/go-uniondemo/internal/screens"
 )
+
+var hiddenTourPath = func() *motion.RampedWavePath {
+	path, err := motion.NewRampedWavePath(motion.RampedWavePathConfig{
+		Base: motion.Point{X: Width / 2, Y: Height / 2},
+		X:    motion.Wave{Amplitude: 220, Speed: .8},
+		Y:    motion.Wave{Amplitude: 140, Speed: 1.1},
+		Rise: 2,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return path
+}()
 
 // TourOptions controls the finite recording route. The complete introduction,
 // loading credits and walking time are additional to these durations.
@@ -183,9 +196,8 @@ func tourScreenInput(id string, tick, total, rate int) screens.Input {
 		}
 	case "hidden":
 		seconds := float64(tick) / float64(rate)
-		amplitude := math.Min(1, seconds/2)
-		in.PointerX += amplitude * 220 * math.Sin(seconds*.8)
-		in.PointerY += amplitude * 140 * math.Sin(seconds*1.1)
+		point := hiddenTourPath.At(seconds)
+		in.PointerX, in.PointerY = point.X, point.Y
 	case "starballs":
 		for i, number := range []int{4, 7, 10} {
 			if at(i+1, 4) {

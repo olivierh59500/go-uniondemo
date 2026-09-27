@@ -173,6 +173,25 @@ func TestTourDemonstratesInteractiveScreens(t *testing.T) {
 	}
 }
 
+func TestTourHiddenPointerPreservesAuthoredRampedWaves(t *testing.T) {
+	for _, rate := range []int{50, 60} {
+		for tick := 0; tick <= 3600; tick++ {
+			seconds := float64(tick) / float64(rate)
+			amplitude := math.Min(1, seconds/2)
+			wantX := Width/2 + amplitude*220*math.Sin(seconds*.8)
+			wantY := Height/2 + amplitude*140*math.Sin(seconds*1.1)
+			got := tourScreenInput("hidden", tick, 3600, rate)
+			if math.Abs(got.PointerX-wantX) > 1e-12 || math.Abs(got.PointerY-wantY) > 1e-12 {
+				t.Fatalf("%d Hz tick %d: pointer (%g,%g), want (%g,%g)", rate, tick,
+					got.PointerX, got.PointerY, wantX, wantY)
+			}
+			if int(got.PointerX) != int(wantX) || int(got.PointerY) != int(wantY) {
+				t.Fatalf("%d Hz tick %d: pointer changed its raster pixel", rate, tick)
+			}
+		}
+	}
+}
+
 func TestTourRejectsInvalidOptionsAndStalledNavigation(t *testing.T) {
 	for _, options := range []TourOptions{{}, {ScreenDuration: -time.Second, MenuDuration: time.Second}, {ScreenDuration: time.Second}} {
 		if tour, err := NewTour(Config{}, options); err == nil {

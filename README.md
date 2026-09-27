@@ -138,6 +138,11 @@ for pixel.
 The input-driven hall and banner also use `motion.WalkParallax` with separate
 speeds and directional wrap limits. Eleven walking captures, including the
 large hall wrap, match the prior menu pixel for pixel.
+The automated tour's hidden-screen pointer now samples a configurable
+`motion.RampedWavePath`: separate horizontal and vertical sine frequencies
+rise to full amplitude over two seconds. Pure comparisons through tick 3,600
+at both 50 and 60 Hz retain the former coordinates within 1e-12 and the same
+raster pixel; the hidden screen's own artwork and pointer trails are unchanged.
 Multi-Plane's large logo now compiles the shared TCB row-wave sections with
 its own source-index phases. Eight captures at both section joins and the
 profile wrap remain pixel-identical.
