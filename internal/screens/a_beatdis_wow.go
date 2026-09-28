@@ -87,8 +87,8 @@ func (s *Scene) beatDis() {
 		}
 		pattern.DrawAt(scroll, scrollBack, scrollMotion.At(0), 34)
 		scrollMotion.Step()
-		ring.Step()
-		ring.DrawAt(scroll, 0, 0)
+		s.advanceScroll(ring)
+		s.drawScroll(ring, scroll, 0, 0)
 		s.draw(s.Canvas, scroll, 96, 357)
 	}
 }
@@ -126,8 +126,8 @@ func (s *Scene) wowScroller() {
 		stage.Clear()
 		scroll.Clear()
 		s.draw(stage, back, 0, panels.At(0))
-		ring.Step()
-		ring.DrawAt(scroll, 0, 10)
+		s.advanceScroll(ring)
+		s.drawScroll(ring, scroll, 0, 10)
 		rasterFill.Draw(scroll)
 		rasterFill.Step()
 		s.transform(stage, scroll, 0, 0, 2, 2, 0, 0, 0, 1, ebiten.BlendSourceOver)

@@ -1,6 +1,7 @@
 package screens
 
 import (
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/effects"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
@@ -53,11 +54,13 @@ func buildTNT3(s *Scene) {
 		return
 	}
 	s.closers = append(s.closers, carousel.Close)
-	caption, err := scrolling.NewCaptionCarousel(presets.UnionTNTCaption(unionTNTText, font))
+	captionConfig := presets.UnionTNTCaption(unionTNTText, font)
+	caption, err := scrolling.New(scrolling.Config{Caption: &captionConfig})
 	if err != nil {
 		s.err = err
 		return
 	}
+	s.closers = append(s.closers, caption.Close)
 	pending, held := 1, false
 	s.input = func(in Input) {
 		pressed := in.Action || in.Left || in.Right
@@ -88,7 +91,10 @@ func buildTNT3(s *Scene) {
 			return
 		}
 		carousel.Draw(stage)
-		caption.Step()
+		if err := caption.Update(kit.Frame{}); err != nil {
+			s.err = err
+			return
+		}
 		caption.Draw(stage)
 		s.draw(s.Canvas, stage, 64, 68)
 	}

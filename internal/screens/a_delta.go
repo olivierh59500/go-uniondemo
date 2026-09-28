@@ -93,8 +93,8 @@ func (s *Scene) deltaForce() {
 				drawWord(event.X)
 				continue
 			}
-			ring.Step()
-			ring.DrawAt(scroll, 0, 0)
+			s.advanceScroll(ring)
+			s.drawScroll(ring, scroll, 0, 0)
 			wave.DrawAt(merge, scroll, 0, 320)
 			wave.Advance()
 			goldMaterial.Draw(merge)

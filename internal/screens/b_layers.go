@@ -109,16 +109,18 @@ func buildTNT2(s *Scene) {
 func buildStarballs(s *Scene) {
 	font, bob1, bob2, logo := s.image("font.png"), s.image("union_bob1.png"), s.image("union_bob2.png"), s.image("union_logo.png")
 	text := " THE TNT CREW PRESENTS STARBALLS, A SCREEN FROM THE UNION DEMO! WATCH THE BALLS CHANGE COLOUR AS THEY CROSS THE LOGO AND THE SCROLLINE. USE UP AND DOWN TO CHANGE THE NUMBER OF STARBALLS. GREETINGS TO ALL MEMBERS OF THE UNION! MUSIC BY MAD MAX.   "
-	scroll, err := scrolling.NewRing(scrolling.RingConfig{
+	ringConfig := scrolling.RingConfig{
 		Text: text, Font: s.bitmap(font, "union-starballs"), Viewport: 320, Speed: 3, Controls: true,
-	})
+	}
+	scroll, err := scrolling.New(scrolling.Config{Recycled: &scrolling.RecycledConfig{Ring: ringConfig}})
 	if err != nil {
 		s.err = err
 		return
 	}
+	s.closers = append(s.closers, scroll.Close)
 	config, err := presets.UnionStarballs(bob1, bob2, s.rnd, func(mask *ebiten.Image) {
 		s.draw(mask, logo, -32, -34)
-		scroll.DrawAt(mask, 0, 188)
+		s.drawScroll(scroll, mask, 0, 188)
 	})
 	if err != nil {
 		s.err = err
@@ -148,7 +150,7 @@ func buildStarballs(s *Scene) {
 	}
 	s.render = func() {
 		s.Canvas.Fill(color.RGBA{B: 64, A: 255})
-		scroll.Step()
+		s.advanceScroll(scroll)
 		if err := layer.Update(kit.Frame{}); err != nil {
 			s.err = err
 			return

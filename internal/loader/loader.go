@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/assets"
 	"github.com/olivierh59500/democonstructionkit/presets"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
@@ -20,7 +21,7 @@ const Duration = 3777120 * time.Microsecond
 type Screen struct {
 	store       *assets.Store
 	font, paper *ebiten.Image
-	reveal      *scrolling.Reveal
+	reveal      *scrolling.Scrolling
 	clock       *timeline.CueClock
 }
 
@@ -45,7 +46,10 @@ func New(id string, files fs.FS, rate int) (*Screen, error) {
 		return nil, err
 	}
 	config := presets.UnionCreditsReveal(grid, lines)
-	s.reveal, err = scrolling.NewReveal(config)
+	s.reveal, err = scrolling.New(scrolling.Config{Reveal: &scrolling.RevealTransportConfig{
+		Reveal: config,
+		TimeAt: func(frame kit.Frame) float64 { return float64(frame.Tick) * 140 * 60 / float64(clock.Rate()) },
+	}})
 	if err != nil {
 		s.store.Close()
 		return nil, err
@@ -53,7 +57,10 @@ func New(id string, files fs.FS, rate int) (*Screen, error) {
 	s.paper = ebiten.NewImage(640, 400)
 	return s, nil
 }
-func (s *Screen) Update() { s.clock.Step() }
+func (s *Screen) Update() {
+	s.clock.Step()
+	_ = s.reveal.Update(kit.Frame{Tick: uint64(s.clock.Tick())})
+}
 func (s *Screen) Done() bool {
 	return s.clock.Reached(Duration)
 }
@@ -61,10 +68,14 @@ func (s *Screen) Draw(dst *ebiten.Image) {
 	dst.Fill(color.Black)
 	s.paper.Clear()
 	// The shared reveal uses a fixed clock independent from display refresh.
-	s.reveal.DrawAt(s.paper, float64(s.clock.Tick())*140*60/float64(s.clock.Rate()))
+	s.reveal.Draw(s.paper)
 
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Translate(64, 60)
 	dst.DrawImage(s.paper, &op)
 }
-func (s *Screen) Close() error { s.paper.Deallocate(); return s.store.Close() }
+func (s *Screen) Close() error {
+	s.reveal.Close()
+	s.paper.Deallocate()
+	return s.store.Close()
+}
