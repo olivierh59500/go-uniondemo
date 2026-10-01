@@ -20,8 +20,8 @@ func (s *Scene) replicants() {
 	main, mask, rasters := s.image("overlay.png"), s.image("rastersOverlay.png"), s.image("rasters.png")
 	blue, red := s.image("fontBlue.png"), s.image("fontRed.png")
 	pink, green, brown := s.image("rastersPink.png"), s.image("rastersGreen.png"), s.image("rastersBrown.png")
-	var glyphs [14]*ebiten.Image
-	for i, name := range []string{"T", "H", "E", "Space", "R", "E", "P", "L", "I", "C", "A", "N", "T", "S"} {
+	var glyphs [13]*ebiten.Image
+	for i, name := range []string{"T", "H", "E", "R", "E", "P", "L", "I", "C", "A", "N", "T", "S"} {
 		glyphs[i] = s.image("sprite" + name + ".png")
 	}
 	if s.err != nil {

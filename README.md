@@ -119,11 +119,11 @@ per frame instead of evaluating two sine expressions for each of 224 cells.
 Eight frames across the intro remain pixel-identical to the previous renderer.
 Wow and Replicants use `composite.RasterOverlay` for their masked raster
 material. Their opposite phase directions and inclusive wrap boundaries stay
-editable in DCK. Replicants arranges its letter sprites in a resting row and
-uses DCK's `motion.CuedFormation` with `sprites.Group` to sequence staggered
-horizontal, vertical, arcing and compressing trajectories. The six old
-Replicants pixel captures predate this movement correction; its raster
-handoffs remain unchanged. The two bouncing raster banks now use DCK's
+editable in DCK. Replicants uses coordinates recovered from its Atari executable for thirteen
+visible letters. DCK owns their cached keyframes and step sampling. The native
+31-frame entry and 1,273-frame cycle retain all fourteen path banks and their
+repeat counts at 50 Hz, independently of the 60 Hz host display.
+The two bouncing raster banks now use DCK's
 `sprites.Train` with `motion.BounceBank`; ten frames around the bounce
 boundaries match the previous implementation pixel for pixel.
 Beat Dis, Wow, TNT2 and Level 16 now share `motion.WrapBank` for their
@@ -161,12 +161,15 @@ phase in all color channels. `effects.MultiPlaneScene` now composes this
 screen in native-stage mode while Union retains its own assets and music.
 Its projected text now uses `scrolling.New` with Union's own projection bias.
 Nine captures through frame 8,000 remain pixel-identical, including late forms.
-The Replicants letters use DCK's `motion.KeyframedFormation`. Their 126 authored
-position banks cover the 25-second cycle: rapid left/right stacks, independent
-letter waves and fast arcs crossing the panels in both directions. DCK
-interpolates and loops the positions without allocating during a frame. The
-screen loads only its artwork data from `assets/replicants/motion.json`; the
-same formation works with any ordered sprite bank.
+The Replicants letters use DCK's `motion.KeyframedFormation`, with exact
+positions read from the original 68000 tables. `assets/replicants/native-motion.json`
+contains the entry and complete repeating cycle; no per-frame image allocation
+is required. The bank excludes the empty space slot because the original has
+thirteen drawn letters. The first letters begin in a shared stack, then follow
+the original waves, reversals, compression and crossing arcs. A 33,501-sample
+fixture obtained by running the original drawing routine verifies the screen
+memory offsets over two complete cycles. Host rates do not accelerate the
+native sprite clock.
 
 ## Validation and frame captures
 
