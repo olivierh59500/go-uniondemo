@@ -5,6 +5,33 @@ The introduction opens with a scrolling background, waving text and YM music,
 then leads to the Union hall and its eleven screens with animated loading credits.
 Graphics, bitmap fonts and music are embedded; playback works offline.
 
+<!-- Project showcase -->
+## Screenshots
+
+[![Music-driven purple spheres over a gold perspective plane](docs/media/screenshot-1.png)](docs/media/screenshot-1.png)
+
+Music-driven purple spheres over a gold perspective plane.
+
+[![Rotating checkered solid sphere in a star field](docs/media/screenshot-2.png)](docs/media/screenshot-2.png)
+
+Rotating checkered solid sphere in a star field.
+
+[![Layered patterns and a rotating perspective text scroller](docs/media/screenshot-3.png)](docs/media/screenshot-3.png)
+
+Layered patterns and a rotating perspective text scroller.
+
+## Video
+
+[![Animated preview of The Union Demo](docs/media/preview.gif)](https://github.com/olivierh59500/go-uniondemo/raw/refs/heads/main/docs/media/preview.mp4)
+
+**[Watch or download the 24-second MP4 preview with sound](https://github.com/olivierh59500/go-uniondemo/raw/refs/heads/main/docs/media/preview.mp4)**
+
+This short showcase combines selected passages from the Go production.
+
+The animated image is silent; the MP4 includes the soundtrack.
+
+<!-- End project showcase -->
+
 ## Run
 
 Go 1.26 or newer is required. Dependencies are pinned in `go.mod`, including
